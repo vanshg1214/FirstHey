@@ -3,6 +3,7 @@ import { getCurrentUserOrgId } from '@/lib/auth';
 import { createClient } from '@/utils/supabase/server';
 import { SettingsService } from '@/lib/services/settings';
 import { GoogleGenAI } from '@google/genai';
+import { CampaignsRepository } from '@/lib/repositories/campaigns';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -45,32 +46,26 @@ export async function POST(req: NextRequest) {
     let activeCampaigns: any[] = [];
     let totalCampaignsCount = 0;
     try {
-      const [leadsRes, campaignsRes, leadsCountRes, campaignsCountRes] = await Promise.all([
+      const [leadsRes, leadsCountRes, campaignsRes] = await Promise.all([
         supabase
           .from('leads')
           .select('contact_fields, context_summary')
           .eq('organization_id', orgId)
           .order('created_at', { ascending: false })
-          .limit(1000), // Expanded to give AI full database memory
-        supabase
-          .from('campaigns')
-          .select('name, status')
-          .eq('organization_id', orgId)
-          .limit(1000), // Expanded to give AI full database memory
+          .limit(100), // Reduced slightly to save tokens for campaigns
         supabase
           .from('leads')
           .select('*', { count: 'exact', head: true })
           .eq('organization_id', orgId),
-        supabase
-          .from('campaigns')
-          .select('*', { count: 'exact', head: true })
-          .eq('organization_id', orgId),
+        CampaignsRepository.getCampaigns(supabase, orgId)
       ]);
+      
       recentLeads = leadsRes.data || [];
-      activeCampaigns = campaignsRes.data || [];
       totalLeadsCount = leadsCountRes.count || recentLeads.length;
-      totalCampaignsCount = campaignsCountRes.count || activeCampaigns.length;
-    } catch (_) {
+      activeCampaigns = campaignsRes || [];
+      totalCampaignsCount = activeCampaigns.length;
+    } catch (e) {
+      console.error("Context fetch error", e);
       // CRM context is bonus — never crash the chat because of it
     }
 
@@ -86,7 +81,13 @@ export async function POST(req: NextRequest) {
       })
       .join('\n') || 'No leads found.';
 
-    const campaignsContext = activeCampaigns.map((c) => c.name).join(', ') || 'None';
+    const campaignsContext = activeCampaigns.map((c) => {
+      return `### Campaign: ${c.name}
+- Status: ${c.status}
+- Description/Goal: ${c.description || 'None provided'}
+- Performance Metrics: ${c.lead_count} total leads, ${c.emails_sent} emails sent, ${c.opened_count} opens, ${c.hot_count} hot leads.
+- To improve this campaign, analyze its performance metrics against its goal. If open rates are low, suggest trying different subject lines. If hot leads are low, suggest targeting a different persona.`;
+    }).join('\n\n') || 'No active campaigns found.';
 
     const systemInstruction = `You are an elite AI Sales Assistant embedded inside Apexora AI CRM.
 Your role is to help the user manage leads, analyze their pipeline, research companies, and identify the best sales opportunities.
@@ -98,15 +99,15 @@ ${companyProfile}
 - Total Leads in Database: ${totalLeadsCount}
 - Total Campaigns in Database: ${totalCampaignsCount}
 
-### Active Campaigns:
+## Active Campaigns & Analytics:
 ${campaignsContext}
 
-### All CRM Leads:
+## Recent Leads Sample (up to 100):
 ${leadsContext}
 
 ## Your Behavior Rules:
 1. When the user asks you to research a company (e.g. "Adani Mills", "Tata Steel"), USE the googleSearch tool to fetch live internet data, then cross-reference it with the company profile above to suggest how they can pitch their product.
-2. When answering about CRM data (leads, campaigns), use the data provided above.
+2. When answering about CRM data, campaigns, or how to improve a campaign, aggressively use the rich analytics provided above to give specific, data-driven advice.
 3. Always respond in clean, well-formatted Markdown.
 4. Be concise, direct, and highly actionable — you are talking to a busy sales professional.
 5. Never hallucinate. If you don't know something, say so and suggest using search.`;
