@@ -15,6 +15,12 @@ export async function GET(
     const campaignId = resolvedParams.id;
     const supabase = await createClient();
     const campaign = await CampaignsRepository.getCampaignById(supabase, campaignId);
+    
+    // Fetch settings and orgId
+    const { getCurrentUserOrgId } = require('@/lib/auth');
+    const { SettingsService } = require('@/lib/services/settings');
+    const orgId = await getCurrentUserOrgId();
+    const settings = orgId ? await SettingsService.getSettings(orgId) : ({} as any);
 
     // Get analytics for this campaign (Emails sent vs opened)
     // We query the followups table for leads that are in this campaign

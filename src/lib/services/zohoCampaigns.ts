@@ -146,6 +146,86 @@ export class ZohoCampaignsService {
   }
 
   /**
+   * Fetches all mailing lists from Zoho Campaigns.
+   */
+  public static async getMailingLists(
+    credentials: { orgId: string; clientId: string; clientSecret: string; refreshToken: string; accountsUrl?: string; campaignsApiUrl?: string }
+  ) {
+    try {
+      const token = await this.getAccessToken(credentials.orgId, credentials.clientId, credentials.clientSecret, credentials.refreshToken, credentials.accountsUrl);
+      const apiUrl = `${credentials.campaignsApiUrl || this.getApiUrl()}/getmailinglists?resfmt=JSON`;
+
+      const response = await fetch(apiUrl, {
+        method: 'GET',
+        headers: { 'Authorization': `Zoho-oauthtoken ${token}` }
+      });
+
+      if (!response.ok) return [];
+      const data = await response.json();
+      
+      if (data && data.list_of_details) {
+        return data.list_of_details; // Array of mailing lists
+      }
+      return [];
+    } catch (error) {
+      console.error('Error fetching Zoho Mailing Lists:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Creates a new Zoho Campaign.
+   */
+  public static async createCampaign(
+    credentials: { orgId: string; clientId: string; clientSecret: string; refreshToken: string; accountsUrl?: string; campaignsApiUrl?: string },
+    payload: {
+      campaignname: string;
+      from_email: string;
+      subject: string;
+      listkey: string;
+      content_url: string;
+    }
+  ) {
+    try {
+      const token = await this.getAccessToken(credentials.orgId, credentials.clientId, credentials.clientSecret, credentials.refreshToken, credentials.accountsUrl);
+      const apiUrl = `${credentials.campaignsApiUrl || this.getApiUrl()}/createCampaign`;
+
+      // API requires x-www-form-urlencoded
+      const formData = new URLSearchParams();
+      formData.append('resfmt', 'JSON');
+      formData.append('campaignname', payload.campaignname);
+      formData.append('from_email', payload.from_email);
+      formData.append('subject', payload.subject);
+      // list_details expects JSON string: {"listkey1":[]}
+      formData.append('list_details', JSON.stringify({ [payload.listkey]: [] }));
+      formData.append('content_url', payload.content_url);
+
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Zoho-oauthtoken ${token}`,
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: formData.toString()
+      });
+
+      const data = await response.json();
+      
+      if (data && data.status === 'success' && data.recent_activities && data.recent_activities.campaign_key) {
+        return data.recent_activities.campaign_key;
+      } else if (data && data.campaign_key) {
+        return data.campaign_key;
+      }
+      
+      console.warn('Failed to parse campaign key from response:', data);
+      return null;
+    } catch (error) {
+      console.error('Error creating Zoho Campaign:', error);
+      return null;
+    }
+  }
+
+  /**
    * Fetches aggregate campaign statistics (sent, opened, clicked) from Zoho Campaigns.
    */
   public static async fetchCampaignAnalytics(

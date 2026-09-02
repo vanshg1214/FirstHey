@@ -14,6 +14,7 @@ export default function SettingsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [testingService, setTestingService] = useState<string | null>(null);
+  const [isAutoSettingUp, setIsAutoSettingUp] = useState(false);
   const { addToast } = useToast();
   const router = useRouter();
   const supabase = createClient();
@@ -90,6 +91,32 @@ export default function SettingsPage() {
       addToast('error', 'Network error during test');
     } finally {
       setTestingService(null);
+    }
+  };
+
+  const handleAutoSetup = async () => {
+    // Check if basic OAuth fields exist
+    if (!settings.zoho_client_id || !settings.zoho_refresh_token || !settings.zoho_client_secret) {
+      addToast('error', 'Please fill in your Zoho Client ID, Client Secret, and Refresh Token first, and click Save.');
+      return;
+    }
+    
+    setIsAutoSettingUp(true);
+    addToast('info', 'Connecting to Zoho API to auto-configure campaign...');
+    try {
+      const res = await fetch('/api/settings/zoho-auto-setup', { method: 'POST' });
+      const data = await res.json();
+      
+      if (data.success && data.campaign_key) {
+        setSettings(prev => ({ ...prev, zoho_campaign_key: data.campaign_key }));
+        addToast('success', 'Campaign auto-created! Please verify it in your Zoho Campaigns dashboard and submit for review.');
+      } else {
+        addToast('error', data.error || 'Failed to auto-create campaign');
+      }
+    } catch (err) {
+      addToast('error', 'Network error during auto-setup');
+    } finally {
+      setIsAutoSettingUp(false);
     }
   };
 
@@ -356,8 +383,19 @@ export default function SettingsPage() {
                     className="block w-full rounded-md border border-slate-300 bg-white px-4 py-2 text-slate-900 focus:border-blue-500 focus:ring-blue-500 sm:text-sm shadow-sm"
                     placeholder="Found in Zoho Campaigns Dashboard"
                   />
+                  <div className="mt-2 flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={handleAutoSetup}
+                      disabled={isAutoSettingUp}
+                      className="inline-flex items-center rounded-md bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700 shadow-sm hover:bg-blue-100 disabled:opacity-50"
+                    >
+                      {isAutoSettingUp ? 'Setting up...' : 'Auto-Setup Zoho Campaign'}
+                    </button>
+                    <p className="text-xs text-slate-500">Creates the campaign automatically and fetches the key.</p>
+                  </div>
                 </div>
-                <p className="mt-2 text-xs text-slate-500">If provided, the AI CRM will send emails via Zoho Campaigns instead of normal SMTP to track detailed engagement analytics.</p>
+                <p className="mt-3 text-xs text-slate-500">If provided, the AI CRM will send emails via Zoho Campaigns instead of normal SMTP to track detailed engagement analytics.</p>
               </div>
             </div>
           </div>
