@@ -32,14 +32,27 @@ export class SettingsService {
       .eq('organization_id', organizationId)
       .single();
 
+    let dbSettings: any = {};
+
     if (error) {
-      // If no settings exist yet, return an empty object rather than crashing
-      if (error.code === 'PGRST116') {
-        return {};
+      if (error.code !== 'PGRST116') {
+        console.error(`Failed to fetch organization settings: ${error.message}`);
       }
-      throw new Error(`Failed to fetch organization settings: ${error.message}`);
+    } else {
+      dbSettings = data || {};
     }
 
-    return data || {};
+    // Merge DB settings with .env fallback for Internal Tool Mode
+    return {
+      ...dbSettings,
+      gemini_api_key: dbSettings.gemini_api_key || process.env.GEMINI_API_KEY,
+      zoho_client_id: dbSettings.zoho_client_id || process.env.ZOHO_CLIENT_ID,
+      zoho_client_secret: dbSettings.zoho_client_secret || process.env.ZOHO_CLIENT_SECRET,
+      zoho_refresh_token: dbSettings.zoho_refresh_token || process.env.ZOHO_REFRESH_TOKEN,
+      zoho_api_url: dbSettings.zoho_api_url || process.env.ZOHO_API_URL,
+      zoho_accounts_url: dbSettings.zoho_accounts_url || process.env.ZOHO_ACCOUNTS_URL,
+      zoho_campaign_key: dbSettings.zoho_campaign_key || process.env.ZOHO_CAMPAIGN_KEY,
+      zoho_campaigns_api_url: dbSettings.zoho_campaigns_api_url || process.env.ZOHO_CAMPAIGNS_API_URL,
+    };
   }
 }

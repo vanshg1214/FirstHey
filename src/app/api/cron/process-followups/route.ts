@@ -165,21 +165,14 @@ export async function GET(req: NextRequest) {
             const currentNeeds = lead.context_summary?.needs || 'Not specified';
             const baseDescription = `Prospect captured from Trade Show recording. Problem: ${currentProblem}. Needs: ${currentNeeds}`;
             
-            const isZohoConfigured = !!settings.zoho_client_id;
-            const zohoClientId = isZohoConfigured ? settings.zoho_client_id : process.env.ZOHO_CLIENT_ID;
-            const zohoClientSecret = isZohoConfigured ? settings.zoho_client_secret : process.env.ZOHO_CLIENT_SECRET;
-            const zohoRefreshToken = isZohoConfigured ? settings.zoho_refresh_token : process.env.ZOHO_REFRESH_TOKEN;
-            const zohoApiUrl = isZohoConfigured ? settings.zoho_api_url : (process.env.ZOHO_API_URL || 'https://www.zohoapis.in');
-            const zohoAccountsUrl = isZohoConfigured ? settings.zoho_accounts_url : (process.env.ZOHO_ACCOUNTS_URL || 'https://accounts.zoho.in');
-
-            if (zohoClientId && zohoClientSecret && zohoRefreshToken) {
+            if (settings.zoho_client_id && settings.zoho_client_secret && settings.zoho_refresh_token) {
               const zohoCredentials = {
                 orgId: lead.organization_id,
-                clientId: zohoClientId,
-                clientSecret: zohoClientSecret,
-                refreshToken: zohoRefreshToken,
-                apiUrl: zohoApiUrl,
-                accountsUrl: zohoAccountsUrl
+                clientId: settings.zoho_client_id,
+                clientSecret: settings.zoho_client_secret,
+                refreshToken: settings.zoho_refresh_token,
+                apiUrl: settings.zoho_api_url || 'https://www.zohoapis.in',
+                accountsUrl: settings.zoho_accounts_url || 'https://accounts.zoho.in'
               };
               await ZohoService.updateLead(zohoCredentials, lead.crm_record_id, {
                 Lead_Status: 'Attempted to Contact',

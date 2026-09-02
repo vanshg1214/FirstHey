@@ -81,23 +81,13 @@ ${emailBody}
     const settings = await SettingsService.getSettings(lead.organization_id);
 
     try {
-      const isZohoConfigured = !!settings.zoho_client_id;
-      const zohoClientId = isZohoConfigured ? settings.zoho_client_id : process.env.ZOHO_CLIENT_ID;
-      const zohoClientSecret = isZohoConfigured ? settings.zoho_client_secret : process.env.ZOHO_CLIENT_SECRET;
-      const zohoRefreshToken = isZohoConfigured ? settings.zoho_refresh_token : process.env.ZOHO_REFRESH_TOKEN;
-      const zohoApiUrl = isZohoConfigured ? settings.zoho_api_url : (process.env.ZOHO_API_URL || 'https://www.zohoapis.in');
-      const zohoAccountsUrl = isZohoConfigured ? settings.zoho_accounts_url : (process.env.ZOHO_ACCOUNTS_URL || 'https://accounts.zoho.in');
-
-      if (!zohoClientId || !zohoClientSecret || !zohoRefreshToken) {
-        throw new Error("Zoho credentials missing in organization settings and environment.");
-      }
       const zohoCredentials = {
         orgId: lead.organization_id,
-        clientId: zohoClientId,
-        clientSecret: zohoClientSecret,
-        refreshToken: zohoRefreshToken,
-        apiUrl: zohoApiUrl,
-        accountsUrl: zohoAccountsUrl
+        clientId: settings.zoho_client_id || process.env.ZOHO_CLIENT_ID || '',
+        clientSecret: settings.zoho_client_secret || process.env.ZOHO_CLIENT_SECRET || '',
+        refreshToken: settings.zoho_refresh_token || process.env.ZOHO_REFRESH_TOKEN || '',
+        apiUrl: settings.zoho_api_url || process.env.ZOHO_API_URL || 'https://www.zohoapis.in',
+        accountsUrl: settings.zoho_accounts_url || process.env.ZOHO_ACCOUNTS_URL || 'https://accounts.zoho.in'
       };
       const zohoResult = await ZohoService.createLead(zohoCredentials, crmPayload);
       crmRecordId = zohoResult.crmRecordId;
