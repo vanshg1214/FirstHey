@@ -749,6 +749,7 @@ export default function LeadDetailPanel({ lead, onClose, onRefresh }: LeadDetail
           <FollowupDraftEditor
             leadId={lead.id}
             initialDraft={emailDraft}
+            phoneNumber={lead.contact_fields?.phone || lead.contact_fields?.mobile || ''}
             onSuccess={() => {
               setEmailDraft(null);
               onRefresh();

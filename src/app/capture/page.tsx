@@ -477,7 +477,6 @@ function CaptureDashboardContent() {
           audioBase64: offlineAudioBase64,
           audioMimeType: audioBlobType,
           cardImageBase64: extractedFields.image || null,
-          source: mode === 'bulk' ? 'bulk_scan' : mode === 'card' ? 'card_scan' : mode === 'voice' ? 'voice_note' : 'manual',
           exhibition: exhibition || null,
           exhibition_id: exhibitionId || null,
           stall: stall || null,
@@ -534,8 +533,8 @@ function CaptureDashboardContent() {
     }
   };
 
-  const handleFollowupSuccess = (system: 'zoho' | 'sheets') => {
-    setSyncSystem(system);
+  const handleFollowupSuccess = (system: 'zoho' | 'sheets' | 'direct') => {
+    setSyncSystem(system === 'direct' ? 'sheets' : system);
     setIsComplete(true);
     setEmailDraft(null);
   };

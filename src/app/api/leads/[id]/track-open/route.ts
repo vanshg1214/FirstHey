@@ -28,7 +28,7 @@ export async function GET(
       const newHistoryEvent = {
         opened_at: new Date().toISOString(),
         touch: touch,
-        ip: req.headers.get('x-forwarded-for') || req.ip || 'unknown',
+        ip: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown',
         user_agent: req.headers.get('user-agent') || 'unknown'
       };
 

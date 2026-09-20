@@ -15,6 +15,7 @@ export interface OfflineLead {
   cardImageBase64?: string | null;
   campaignId?: string | null;
   exhibition?: string | null;
+  exhibition_id?: string | null;
   stall?: string | null;
 }
 

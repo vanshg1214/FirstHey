@@ -52,18 +52,18 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json({ message: 'No eligible uncontacted leads found with an email address.' });
     }
 
-    // Initialize Email Service
+    // Initialize Email Service credentials
     const settings = await SettingsService.getSettings(userData.organization_id);
-    const emailCreds = settings.email_user && settings.email_password 
-      ? { user: settings.email_user, pass: settings.email_password }
-      : undefined;
-      
-    const emailService = new EmailService(emailCreds, settings.email_from_name || '');
+    const emailCreds = {
+      user: settings.email_user || undefined,
+      pass: settings.email_password || undefined,
+      fromName: settings.email_from_name || '',
+    };
     
     let sentCount = 0;
-    const failedLeads = [];
+    const failedLeads: string[] = [];
 
-    // Send emails in a loop (for large blasts this should be queued, but fine for MVP)
+    // Send emails in a loop
     for (const lead of allLeads) {
       const contactFields = lead.contact_fields || {};
       const targetEmail = lead.email || contactFields.email;
@@ -81,12 +81,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         .replace(/\[Company\]/g, lead.company || contactFields.company || 'your company');
 
       try {
-        await emailService.sendEmail({
-          to: targetEmail,
-          subject: personalizedSubject,
-          body: personalizedBody,
-          leadId: lead.id,
-        });
+        await EmailService.sendEmail(
+          emailCreds,
+          targetEmail,
+          personalizedSubject,
+          personalizedBody,
+          lead.id,
+          undefined,
+          process.env.NEXT_PUBLIC_APP_URL
+        );
 
         // Mark as contacted
         await supabaseAdmin.from('leads').update({ status: 'contacted' }).eq('id', lead.id);
