@@ -84,7 +84,7 @@ export class EmailService {
     // Build tracking pixel URL (only appended to HTML part)
     let pixelTag = '';
     if (leadId) {
-      const finalAppUrl = appUrl || process.env.NEXT_PUBLIC_APP_URL || '';
+      const finalAppUrl = appUrl || process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_PROJECT_PRODUCTION_URL ? 'https://' + process.env.VERCEL_PROJECT_PRODUCTION_URL : (process.env.VERCEL_URL ? 'https://' + process.env.VERCEL_URL : ''));
       if (finalAppUrl) {
         const trackingUrl = `${finalAppUrl}/api/leads/${leadId}/track-open${touchPosition ? `?touch=${touchPosition}` : ''}`;
         pixelTag = `<img src="${trackingUrl}" width="0" height="0" alt="" style="display:none;" />`;
