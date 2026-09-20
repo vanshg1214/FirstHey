@@ -13,7 +13,7 @@ export class ZohoCampaignsService {
   }
   static async addContactToCampaign(_credentials: any, _campaignKey: string, _contact: any): Promise<void> {}
   static async sendCampaign(_credentials: any, _campaignKey: string): Promise<void> {}
-  static async fetchCampaignAnalytics(_credentials: any, _campaignName: string): Promise<null> {
+  static async fetchCampaignAnalytics(_credentials: any, _campaignName: string): Promise<any> {
     return null;
   }
   static async fetchCampaignRecipients(_credentials: any, _campaignKey: string, _type: 'open' | 'click'): Promise<any[]> {
