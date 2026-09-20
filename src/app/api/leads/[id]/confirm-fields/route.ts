@@ -39,7 +39,14 @@ export async function POST(
       notable_quotes: context.notable_quotes || [],
     };
 
-    // 3. Fetch Settings and Generate Follow-up Draft
+    // 3. Fetch Exhibition Name
+    let exhibitionName = updatedLead.exhibition || null;
+    if (updatedLead.exhibition_id) {
+      const { data: exData } = await supabaseAdmin.from('exhibitions').select('name').eq('id', updatedLead.exhibition_id).single();
+      if (exData) exhibitionName = exData.name;
+    }
+
+    // 4. Fetch Settings and Generate Follow-up Draft
     const settings = await SettingsService.getSettings(updatedLead.organization_id);
     const apiKey = settings.gemini_api_key || process.env.GEMINI_API_KEY;
     if (!apiKey) {
@@ -56,7 +63,8 @@ export async function POST(
       apiKey,
       emailDetails,
       contextDetails,
-      senderName || 'Sales Representative'
+      senderName || 'Sales Representative',
+      exhibitionName
     );
 
     return NextResponse.json({

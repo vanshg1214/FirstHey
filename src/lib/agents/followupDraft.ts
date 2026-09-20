@@ -15,7 +15,8 @@ export class FollowupDraftAgent {
     apiKey: string,
     contactFields: { name?: string | null; company?: string | null; title?: string | null },
     contextSummary: { problem?: string | null; needs?: string | null; action_items?: string[]; notable_quotes?: string[] },
-    senderName: string = 'Sales Rep'
+    senderName: string = 'Sales Rep',
+    exhibitionName?: string | null
   ): Promise<FollowupDraftOutput> {
     if (!apiKey) {
       throw new Error('Gemini API key is required but was not provided.');
@@ -56,6 +57,7 @@ export class FollowupDraftAgent {
       contact: contactFields,
       context: contextSummary,
       sender_name: senderName,
+      exhibition: exhibitionName || 'Unknown Event',
     }, null, 2);
 
     const prompt = `Generate the follow-up draft for the following lead:\n\n${payload}`;
@@ -67,8 +69,8 @@ export class FollowupDraftAgent {
     } catch (error) {
       console.error('[FollowupDraftAgent] CRITICAL: AI generation failed. Full error:', JSON.stringify(error, null, 2));
       return {
-        subject: 'Great meeting you!',
-        emailBody: `Dear ${contactFields.name ? contactFields.name : 'Sir/Ma\'am'},\n\nIt was great meeting you recently. I'd love to stay in touch and explore how we can collaborate. Let me know when you have some time for a quick chat.`,
+        subject: 'Nice to meet you!',
+        emailBody: `Hey ${contactFields.name ? contactFields.name + ' ji' : 'there'},\n\nIt was nice meeting you at the ${exhibitionName || 'recent'} exhibition. Let's stay in touch!`,
         whatsappBody: `Hi ${contactFields.name ? contactFields.name : 'there'}! It was great meeting you recently. Let's stay in touch!`
       };
     }

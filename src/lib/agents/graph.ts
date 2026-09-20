@@ -6,6 +6,7 @@ import { ZohoService } from '@/lib/services/zoho';
 import { SheetsService } from '@/lib/services/sheets';
 import { LeadsRepository } from '@/lib/repositories/leads';
 import { SettingsService } from '@/lib/services/settings';
+import { supabaseAdmin } from '@/lib/supabase';
 
 // Define the shared graph state using Annotation API
 export const LeadCaptureStateAnnotation = Annotation.Root({
@@ -97,6 +98,18 @@ async function generateFollowupNode(state: LeadCaptureState) {
   if (!apiKey) return { errorMessage: 'Gemini API key is missing in organization settings.' };
 
   try {
+    let exhibitionName = null;
+    if (state.leadId) {
+      const { data: leadData } = await supabaseAdmin.from('leads').select('exhibition, exhibition_id').eq('id', state.leadId).single();
+      if (leadData) {
+        exhibitionName = leadData.exhibition || null;
+        if (leadData.exhibition_id) {
+          const { data: exData } = await supabaseAdmin.from('exhibitions').select('name').eq('id', leadData.exhibition_id).single();
+          if (exData) exhibitionName = exData.name;
+        }
+      }
+    }
+
     const draft = await FollowupDraftAgent.generateDraft(
       apiKey,
       {
@@ -110,7 +123,8 @@ async function generateFollowupNode(state: LeadCaptureState) {
         action_items: state.context.action_items || [],
         notable_quotes: state.context.notable_quotes || [],
       },
-      'Sales Representative'
+      'Sales Representative',
+      exhibitionName
     );
 
     return { emailDraft: draft };

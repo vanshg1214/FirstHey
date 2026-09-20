@@ -91,7 +91,53 @@ export class EmailService {
       }
     }
 
-    const htmlBody = `<div style="font-family:Arial,sans-serif;font-size:15px;line-height:1.6;color:#1a1a1a;">${safeBody}<br><br>${fromName}</div>${pixelTag}`;
+    const htmlBody = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+  <meta name="supported-color-schemes" content="light dark">
+  <title>Follow Up</title>
+  <style>
+    :root { color-scheme: light dark; }
+    @media (prefers-color-scheme: dark) {
+      body, .email-bg, .email-container { background-color: #121212 !important; color: #e2e8f0 !important; }
+      .text-primary { color: #f8fafc !important; }
+      .text-secondary { color: #a0aec0 !important; }
+      .border-divider { border-color: #2d3748 !important; }
+    }
+  </style>
+</head>
+<body class="body email-bg" style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #ffffff; color: #2d3748;">
+  <div class="email-container" style="max-width: 600px; margin: 30px auto; padding: 0 15px; background-color: #ffffff;">
+    
+    <div style="margin-bottom: 35px;">
+      <div class="text-primary" style="font-size: 22px; font-weight: 900; color: #1a202c; letter-spacing: -0.5px; text-transform: uppercase;">The Next <span style="color: #d32e2d;">D</span>esign</div>
+      <div style="height: 2px; width: 40px; background-color: #d32e2d; margin-top: 10px;"></div>
+    </div>
+
+    <div class="text-primary" style="font-size: 16px; color: #2d3748; line-height: 1.6; white-space: pre-wrap; margin-bottom: 25px;">${safeBody}</div>
+
+    <div style="margin-bottom: 30px;">
+      <a href="https://kuula.co/share/5dBs1/collection/7ckpl?logo=-1&info=0&fs=1&vr=1&sd=1&autorotate=1.5&autop=10&thumbs=1" style="display: inline-block; padding: 16px 36px; background-color: #d32e2d; color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600; border-radius: 4px; letter-spacing: 0.5px;">
+        VPV DEMO
+      </a>
+    </div>
+
+    <div class="border-divider" style="padding-top: 30px; border-top: 1px solid #eaeaea; margin-bottom: 25px;">
+      <div style="border-left: 3px solid #d32e2d; padding-left: 15px;">
+        <div class="text-primary" style="font-size: 15px; font-weight: bold; color: #1a202c; letter-spacing: 0.5px;">${fromName || 'Nitin Gupta'}</div>
+        <div class="text-secondary" style="font-size: 11px; color: #718096; text-transform: uppercase; letter-spacing: 1px; margin-top: 3px; font-weight: 600;">Export Marketing Strategist</div>
+      </div>
+    </div>
+    
+  </div>
+  ${pixelTag}
+</body>
+</html>
+    `;
 
     if (!transporter) {
       // Mock sending by logging to output console
