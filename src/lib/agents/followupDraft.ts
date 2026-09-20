@@ -3,7 +3,8 @@ import { FOLLOWUP_DRAFT_SYSTEM_PROMPT } from '@/lib/prompts/followupDraft.prompt
 
 export interface FollowupDraftOutput {
   subject: string;
-  body: string;
+  emailBody: string;
+  whatsappBody: string;
 }
 
 export class FollowupDraftAgent {
@@ -29,12 +30,16 @@ export class FollowupDraftAgent {
           type: SchemaType.STRING,
           description: "The email subject line, catchy and personalized",
         },
-        body: {
+        emailBody: {
           type: SchemaType.STRING,
           description: "The full email body text, formatted with appropriate line breaks",
         },
+        whatsappBody: {
+          type: SchemaType.STRING,
+          description: "The text for a WhatsApp message, short and casual",
+        },
       },
-      required: ["subject", "body"],
+      required: ["subject", "emailBody", "whatsappBody"],
     };
 
     const model = genAI.getGenerativeModel({
@@ -60,10 +65,11 @@ export class FollowupDraftAgent {
       const text = result.response.text();
       return JSON.parse(text) as FollowupDraftOutput;
     } catch (error) {
-      console.error('Error in Follow-up Draft Agent:', error);
+      console.error('[FollowupDraftAgent] CRITICAL: AI generation failed. Full error:', JSON.stringify(error, null, 2));
       return {
-        subject: 'Following up on our conversation',
-        body: `Hi ${contactFields.name || 'there'},\n\nIt was great speaking with you. I wanted to follow up on our discussion and see how we can assist you.\n\nBest regards,\n${senderName}`,
+        subject: 'Great meeting you!',
+        emailBody: `Dear ${contactFields.name ? contactFields.name : 'Sir/Ma\'am'},\n\nIt was great meeting you recently. I'd love to stay in touch and explore how we can collaborate. Let me know when you have some time for a quick chat.`,
+        whatsappBody: `Hi ${contactFields.name ? contactFields.name : 'there'}! It was great meeting you recently. Let's stay in touch!`
       };
     }
   }

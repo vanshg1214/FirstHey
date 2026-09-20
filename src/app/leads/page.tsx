@@ -318,7 +318,7 @@ export default function LeadsDashboard() {
 
   const sentimentCounts = React.useMemo(() => {
     return leads.reduce((acc: any, lead) => {
-      const sentiment = lead.context_summary?.sentiment || 'neutral';
+      const sentiment = (lead.notes || '').toLowerCase().includes('positive') ? 'positive' : 'neutral';
       acc[sentiment] = (acc[sentiment] || 0) + 1;
       return acc;
     }, { positive: 0, neutral: 0, skeptical: 0, critical: 0 });
@@ -327,7 +327,7 @@ export default function LeadsDashboard() {
   const totalLeads = leads.length;
   const syncedCount = React.useMemo(() => leads.filter((l) => l.status === 'synced').length, [leads]);
   const alertCount = React.useMemo(() => leads.filter((l) => l.status === 'needs_attention').length, [leads]);
-  const hotCount = React.useMemo(() => leads.filter((l) => l.context_summary?.is_hot === true).length, [leads]);
+  const hotCount = React.useMemo(() => leads.filter((l) => (l.open_count || 0) >= 2).length, [leads]);
 
   const animTotalLeads = useAnimatedCount(isLoading ? 0 : totalLeads);
   const animSyncedCount = useAnimatedCount(isLoading ? 0 : syncedCount);
@@ -340,7 +340,7 @@ export default function LeadsDashboard() {
     // Apply status filter
     if (statusFilter !== 'all') {
       if (statusFilter === 'hot') {
-        list = list.filter(l => l.context_summary?.is_hot === true);
+        list = list.filter(l => (l.open_count || 0) >= 2);
       } else {
         list = list.filter(l => l.status === statusFilter);
       }
@@ -379,17 +379,17 @@ export default function LeadsDashboard() {
         <div className="max-w-7xl mx-auto px-4 md:px-8 py-4 flex items-center justify-between">
           <div className="flex items-center">
             <div className="w-36 h-7 flex items-center justify-start">
-              <img src="/logo.png?v=2" alt="Apexora Logo" className="w-full h-full object-contain object-left" />
+              <img src="/logo.png?v=2" alt="FirstHey Logo" className="w-full h-full object-contain object-left" />
             </div>
           </div>
 
           <div className="flex items-center gap-2 sm:gap-4">
             <Link
-              href="/campaigns"
+              href="/exhibitions"
               className="py-2 px-3 sm:py-2.5 sm:px-5 rounded-xl border border-slate-200 text-slate-700 hover:text-slate-900 hover:bg-slate-50 font-bold text-xs sm:text-sm flex items-center gap-1.5 sm:gap-2 transition-all"
             >
               <LayoutDashboard className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              <span className="hidden sm:inline">Campaigns</span>
+              <span className="hidden sm:inline">Exhibitions</span>
             </Link>
             <button
               onClick={fetchLeads}
@@ -424,7 +424,7 @@ export default function LeadsDashboard() {
           <div>
             <h1 className="text-3xl font-bold text-slate-900 tracking-tight flex items-center gap-3">
               <LayoutDashboard className="w-7 h-7 text-slate-800" />
-              Campaign Overview
+              Exhibitions Overview
             </h1>
             <p className="text-sm text-slate-500 mt-2">Monitor all lead processing, extraction status, and automated CRM syncs.</p>
           </div>

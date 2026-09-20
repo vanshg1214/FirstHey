@@ -15,12 +15,16 @@ export default function AnalyticsPage() {
   const [data, setData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedExhibition, setSelectedExhibition] = useState<string>('all');
 
   const fetchAnalytics = async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/analytics');
+      const url = selectedExhibition === 'all' 
+        ? '/api/analytics' 
+        : `/api/analytics?exhibition=${encodeURIComponent(selectedExhibition)}`;
+      const res = await fetch(url);
       const json = await res.json();
       if (json.error) throw new Error(json.error.message);
       setData(json.data);
@@ -33,7 +37,7 @@ export default function AnalyticsPage() {
 
   useEffect(() => {
     fetchAnalytics();
-  }, []);
+  }, [selectedExhibition]);
 
   if (isLoading && !data) {
     return (
@@ -56,13 +60,27 @@ export default function AnalyticsPage() {
             </h1>
             <p className="text-slate-500 mt-2">Performance metrics, engagement tracking, and lead sentiment analysis.</p>
           </div>
-          <button 
-            onClick={fetchAnalytics}
-            className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-50 shadow-sm transition-all"
-          >
-            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-            Refresh Data
-          </button>
+          <div className="flex items-center gap-3">
+            {data?.availableExhibitions?.length > 0 && (
+              <select 
+                value={selectedExhibition}
+                onChange={(e) => setSelectedExhibition(e.target.value)}
+                className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-slate-700 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20 shadow-sm"
+              >
+                <option value="all">All Exhibitions</option>
+                {data.availableExhibitions.map((exh: string) => (
+                  <option key={exh} value={exh}>{exh}</option>
+                ))}
+              </select>
+            )}
+            <button 
+              onClick={fetchAnalytics}
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-50 shadow-sm transition-all"
+            >
+              <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+              Refresh Data
+            </button>
+          </div>
         </div>
 
         {error && (

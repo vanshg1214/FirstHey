@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import RecordButton from '@/components/RecordButton';
 import CardScanner from '@/components/CardScanner';
 import BulkCardScanner from '@/components/BulkCardScanner';
 import NotesScanner from '@/components/NotesScanner';
 import ExtractedFieldsForm from '@/components/ExtractedFieldsForm';
 import FollowupDraftEditor from '@/components/FollowupDraftEditor';
-import { Sparkles, CheckCircle2, ChevronRight, User, ShieldCheck, Play, Save, AlertCircle, Loader2, Layers } from 'lucide-react';
+import { Camera, Upload, Mic, Keyboard, Check, Loader2, ArrowRight, Zap, X, Image as ImageIcon, Briefcase, FileText, Globe, LogOut, FilePlus2, Layers, AlertCircle, RefreshCw, Smartphone, Mail, ChevronLeft, ChevronRight, Sparkles, CheckCircle2, User, ShieldCheck, Play, Save } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { OfflineStorage } from '@/lib/services/offline';
@@ -19,6 +19,7 @@ interface ExtractedContact {
   title: string | null;
   email: string | null;
   phone: string | null;
+  secondary_phone: string | null;
   confidence: number;
   image?: string;
 }
@@ -26,15 +27,41 @@ interface ExtractedContact {
 function CaptureDashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const campaignId = searchParams.get('campaignId');
+
 
   const [mode, setMode] = useState<'card_choice' | 'voice' | 'card' | 'notes' | 'bulk' | 'review'>('card_choice');
 
   const [leadId, setLeadId] = useState<string | null>(null);
   
   // Event Tracking States
+  const [exhibitionId, setExhibitionId] = useState<string>('');
+  const [exhibitionsList, setExhibitionsList] = useState<any[]>([]);
   const [exhibition, setExhibition] = useState<string>('');
   const [stall, setStall] = useState<string>('');
+
+  useEffect(() => {
+    // Check if exhibition_id is passed in URL
+    const urlExhibitionId = searchParams.get('exhibition_id');
+    if (urlExhibitionId) {
+      setExhibitionId(urlExhibitionId);
+    }
+    
+    // Fetch all exhibitions for the dropdown
+    fetch('/api/exhibitions')
+      .then(res => res.json())
+      .then(res => {
+        if (res.data) setExhibitionsList(res.data);
+      })
+      .catch(err => console.error('Failed to fetch exhibitions', err));
+  }, [searchParams]);
+
+  // Sync exhibition name when ID changes (for backward compatibility if needed)
+  useEffect(() => {
+    if (exhibitionId && exhibitionsList.length > 0) {
+      const ex = exhibitionsList.find(e => e.id === exhibitionId);
+      if (ex) setExhibition(ex.name);
+    }
+  }, [exhibitionId, exhibitionsList]);
   
   // Processing States
   const [audioProcessing, setAudioProcessing] = useState(false);
@@ -50,7 +77,7 @@ function CaptureDashboardContent() {
   const [context, setContext] = useState<any>(null);
   const [extractedFields, setExtractedFields] = useState<ExtractedContact | null>(null);
   const [bulkExtractedData, setBulkExtractedData] = useState<(ExtractedContact | null)[]>([]);
-  const [emailDraft, setEmailDraft] = useState<{ subject: string; body: string } | null>(null);
+  const [emailDraft, setEmailDraft] = useState<{ subject: string; emailBody: string; whatsappBody: string } | null>(null);
   
   // Offline caching states
   const [offlineAudioBase64, setOfflineAudioBase64] = useState<string | null>(null);
@@ -58,6 +85,14 @@ function CaptureDashboardContent() {
   
   const [syncSystem, setSyncSystem] = useState<'zoho' | 'sheets' | null>(null);
   const [isComplete, setIsComplete] = useState(false);
+
+  const handleExit = () => {
+    if (exhibitionId) {
+      router.push(`/exhibitions/${exhibitionId}`);
+    } else {
+      router.push('/leads');
+    }
+  };
 
   // Bulk Processing States
   const [verificationQueue, setVerificationQueue] = useState<string[]>([]);
@@ -83,8 +118,7 @@ function CaptureDashboardContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           organizationId: mockOrganizationId, 
-          userId: user?.id || null,
-          campaignId: campaignId || null
+          userId: user?.id || null
         }),
       });
       const result = await response.json();
@@ -213,7 +247,7 @@ function CaptureDashboardContent() {
         } catch (e) {
           console.warn('Batch OCR extraction error', e);
         }
-        results.push({ name: '', company: '', title: '', email: '', phone: '', confidence: 0, image: base64 });
+        results.push({ name: '', company: '', title: '', email: '', phone: '', secondary_phone: '', confidence: 0, image: base64 });
       }
       setBulkExtractedData(results);
       setExtractedFields(results[0]);
@@ -225,7 +259,7 @@ function CaptureDashboardContent() {
 
   const processCardForManualReview = async (index: number) => {
     if (index >= verificationQueue.length) {
-      router.push(campaignId ? `/campaigns/${campaignId}` : '/leads');
+      handleExit();
       return;
     }
     setCardProcessing(true);
@@ -246,14 +280,14 @@ function CaptureDashboardContent() {
         }
       } else {
         console.warn('OCR failed, falling back to manual entry');
-        setExtractedFields({ name: '', company: '', title: '', email: '', phone: '', confidence: 0, image: verificationQueue[index] });
+        setExtractedFields({ name: '', company: '', title: '', email: '', phone: '', secondary_phone: '', confidence: 0, image: verificationQueue[index] });
         if (mode !== 'bulk') {
           setShowFieldsModal(true);
         }
       }
     } catch (e) {
       console.error('Manual card processing failed:', e);
-      setExtractedFields({ name: '', company: '', title: '', email: '', phone: '', confidence: 0, image: verificationQueue[index] });
+      setExtractedFields({ name: '', company: '', title: '', email: '', phone: '', secondary_phone: '', confidence: 0, image: verificationQueue[index] });
       if (mode !== 'bulk') {
         setShowFieldsModal(true);
       }
@@ -286,10 +320,10 @@ function CaptureDashboardContent() {
           body: JSON.stringify({
             contactFields: confirmedFields,
             cardImage: verificationQueue[queueIndex],
-            confidence: 1.0,
-            campaignId: campaignId || null,
+            source: 'card_scan',
             exhibition: exhibition || null,
-            stall: stall || null
+            exhibition_id: exhibitionId || null,
+            stall: stall || null,
           })
         });
       }
@@ -297,7 +331,7 @@ function CaptureDashboardContent() {
       const nextIndex = queueIndex + 1;
       if (nextIndex >= verificationQueue.length) {
         // Finished all cards
-        router.push(campaignId ? `/campaigns/${campaignId}` : '/leads');
+        handleExit();
         return;
       }
       
@@ -351,8 +385,7 @@ function CaptureDashboardContent() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
             organizationId: mockOrganizationId, 
-            userId: currentUserId,
-            campaignId: campaignId || null
+            userId: currentUserId
           }),
         });
         if (!initRes.ok) throw new Error('Init Failed');
@@ -366,7 +399,6 @@ function CaptureDashboardContent() {
             contactFields: extracted,
             cardImage: base64,
             confidence: typeof extracted.confidence === 'number' ? (extracted.confidence / 100) : 1.0,
-            campaignId: campaignId || null,
             exhibition: exhibition || null,
             stall: stall || null
           }),
@@ -381,7 +413,7 @@ function CaptureDashboardContent() {
     }
     
     setTimeout(() => {
-      router.push(campaignId ? `/campaigns/${campaignId}` : '/leads');
+      handleExit();
     }, 1500);
   };
 
@@ -395,7 +427,14 @@ function CaptureDashboardContent() {
   const handleGenerateDraft = async () => {
     setIsDrafting(true);
     try {
-      const response = await fetch(`/api/leads/${leadId}/confirm-fields`, {
+      let activeLeadId = leadId;
+      if (!activeLeadId) {
+        activeLeadId = await ensureLeadId();
+      }
+
+      if (!activeLeadId) throw new Error("Could not initialize lead ID");
+
+      const response = await fetch(`/api/leads/${activeLeadId}/confirm-fields`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -410,7 +449,8 @@ function CaptureDashboardContent() {
       } else {
         setEmailDraft({
           subject: `Following up from our conversation at ${extractedFields?.company || 'the exhibition'}`,
-          body: `Hi ${extractedFields?.name || 'there'},\n\nIt was great speaking with you today. Let's connect next week.\n\nBest,\nSales Exec`,
+          emailBody: `Hi ${extractedFields?.name || 'there'},\n\nIt was great speaking with you today. Let's connect next week.\n\nBest,\nSales Exec`,
+          whatsappBody: `Hi ${extractedFields?.name || 'there'}, it was great speaking with you today!`,
         });
       }
     } catch (e) {
@@ -437,12 +477,13 @@ function CaptureDashboardContent() {
           audioBase64: offlineAudioBase64,
           audioMimeType: audioBlobType,
           cardImageBase64: extractedFields.image || null,
-          campaignId: campaignId || null,
+          source: mode === 'bulk' ? 'bulk_scan' : mode === 'card' ? 'card_scan' : mode === 'voice' ? 'voice_note' : 'manual',
           exhibition: exhibition || null,
+          exhibition_id: exhibitionId || null,
           stall: stall || null,
         });
         
-        router.push(campaignId ? `/campaigns/${campaignId}` : '/leads');
+        handleExit();
       } catch (err) {
         console.error('Failed to save lead offline:', err);
         setSaveError('Failed to cache lead locally. Browser storage might be full.');
@@ -470,7 +511,6 @@ function CaptureDashboardContent() {
             confidence: typeof extractedFields?.confidence === 'number' 
               ? (extractedFields.confidence / 100) 
               : 1.0,
-            campaignId: campaignId || null,
             exhibition: exhibition || null,
             stall: stall || null
           }),
@@ -481,7 +521,7 @@ function CaptureDashboardContent() {
           handleNextInQueue();
         } else {
           router.refresh(); // Clear Next.js router cache to show new lead instantly
-          router.push(campaignId ? `/campaigns/${campaignId}` : '/leads');
+          handleExit();
         }
       } catch (e: any) {
         console.error('Failed to save draft:', e);
@@ -490,7 +530,7 @@ function CaptureDashboardContent() {
         setIsSaving(false);
       }
     } else {
-      router.push(campaignId ? `/campaigns/${campaignId}` : '/leads');
+      handleExit();
     }
   };
 
@@ -525,13 +565,11 @@ function CaptureDashboardContent() {
       {/* Premium Header */}
       <header className="w-full max-w-6xl mx-auto flex flex-col md:flex-row md:items-center justify-between py-4 z-10 gap-4 md:gap-6">
         <Link 
-          href={campaignId ? `/campaigns/${campaignId}` : "/leads"} 
-          className="group flex items-center gap-2 text-sm text-slate-500 hover:text-blue-600 transition-colors font-semibold self-start md:self-auto"
+          href="/leads" 
+          className="flex items-center text-sm font-medium text-slate-500 hover:text-slate-800 transition-colors"
         >
-          <div className="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center shadow-sm group-hover:border-blue-200 group-hover:shadow-md transition-all">
-            <ChevronRight className="w-4 h-4 rotate-180" />
-          </div>
-          {campaignId ? 'Back to Campaign' : 'Back to Dashboard'}
+          <ChevronLeft className="w-5 h-5 mr-1" />
+          Back to Dashboard
         </Link>
         
         <div className="flex items-center justify-between w-full md:w-auto gap-1 bg-white/80 backdrop-blur-md border border-slate-200 p-1.5 rounded-2xl shadow-sm">
@@ -565,6 +603,23 @@ function CaptureDashboardContent() {
           <span className="text-[10px] font-bold tracking-widest text-slate-600 uppercase">Live Workspace</span>
         </div>
       </header>
+
+      {/* Exhibition Selector */}
+      <div className="w-full max-w-6xl mx-auto mb-6 flex justify-center md:justify-end z-10 relative">
+        <div className="bg-white border border-slate-200 rounded-xl p-2 shadow-sm flex items-center gap-3">
+          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider pl-2">Active Event:</span>
+          <select
+            value={exhibitionId}
+            onChange={(e) => setExhibitionId(e.target.value)}
+            className="bg-slate-50 border border-slate-200 text-slate-700 text-sm font-bold rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2 outline-none min-w-[250px] cursor-pointer hover:border-blue-300 transition-colors"
+          >
+            <option value="">-- Select Exhibition (Optional) --</option>
+            {exhibitionsList.map(ex => (
+              <option key={ex.id} value={ex.id}>{ex.name}</option>
+            ))}
+          </select>
+        </div>
+      </div>
 
       {isComplete ? (
         <div className="flex-1 w-full max-w-lg mx-auto flex flex-col items-center justify-center z-10 animate-in fade-in slide-in-from-bottom-8 duration-700">
@@ -735,7 +790,7 @@ function CaptureDashboardContent() {
                                 <ExtractedFieldsForm
                                   initialFields={extractedFields}
                                   onConfirm={handleBulkNextCard}
-                                  onCancel={() => router.push(campaignId ? `/campaigns/${campaignId}` : '/leads')}
+                                  onCancel={handleExit}
                                   submitLabel={queueIndex === verificationQueue.length - 1 ? "Save & Finish" : "Save & Next Card"}
                                   cancelLabel="Exit Review"
                                 />
@@ -833,7 +888,7 @@ function CaptureDashboardContent() {
                 <button
                   onClick={handleGenerateDraft}
                   disabled={isDrafting}
-                  className="w-full py-5 rounded-2xl bg-blue-600 hover:bg-slate-800 text-slate-900 font-bold text-lg shadow-2xl transition-all duration-300 flex items-center justify-center gap-3 shadow-sm hover:scale-[1.01] border border-indigo-400/30"
+                  className="w-full py-5 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-lg shadow-2xl transition-all duration-300 flex items-center justify-center gap-3 shadow-sm hover:scale-[1.01] border border-slate-700"
                 >
                   {isDrafting ? (
                     <>
@@ -889,6 +944,7 @@ function CaptureDashboardContent() {
           <FollowupDraftEditor
             leadId={leadId}
             initialDraft={emailDraft}
+            phoneNumber={extractedFields?.phone || ''}
             onSuccess={handleFollowupSuccess}
             onCancel={() => setEmailDraft(null)}
           />

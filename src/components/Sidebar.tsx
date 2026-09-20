@@ -23,19 +23,13 @@ import { createClient } from '@/utils/supabase/client';
 const NAV_ITEMS = [
   { href: '/leads', icon: LayoutDashboard, label: 'Dashboard', color: 'text-blue-600', hoverBg: 'hover:bg-blue-50', activeBg: 'bg-blue-50 border-blue-200' },
   { href: '/analytics', icon: BarChart2, label: 'Analytics', color: 'text-purple-600', hoverBg: 'hover:bg-purple-50', activeBg: 'bg-purple-50 border-purple-200' },
-  { href: '/campaigns', icon: Megaphone, label: 'Campaigns', color: 'text-teal-600', hoverBg: 'hover:bg-teal-50', activeBg: 'bg-teal-50 border-teal-200' },
-  { href: '/follow-ups', icon: Mail, label: 'Follow-ups', color: 'text-indigo-600', hoverBg: 'hover:bg-indigo-50', activeBg: 'bg-indigo-50 border-indigo-200' },
-  { href: '/chat', icon: Bot, label: 'AI Assistant', color: 'text-emerald-600', hoverBg: 'hover:bg-emerald-50', activeBg: 'bg-emerald-50 border-emerald-200' },
+  { href: '/exhibitions', icon: Target, label: 'Exhibitions', color: 'text-teal-600', hoverBg: 'hover:bg-teal-50', activeBg: 'bg-teal-50 border-teal-200' },
   { href: '/capture', icon: Zap, label: 'Capture', color: 'text-amber-600', hoverBg: 'hover:bg-amber-50', activeBg: 'bg-amber-50 border-amber-200' },
-  { href: '/team', icon: Users, label: 'Team', color: 'text-cyan-600', hoverBg: 'hover:bg-cyan-50', activeBg: 'bg-cyan-50 border-cyan-200' },
-  { href: '/notifications', icon: Bell, label: 'Inbox', color: 'text-rose-600', hoverBg: 'hover:bg-rose-50', activeBg: 'bg-rose-50 border-rose-200' },
   { href: '/profile', icon: User, label: 'Profile', color: 'text-fuchsia-600', hoverBg: 'hover:bg-fuchsia-50', activeBg: 'bg-fuchsia-50 border-fuchsia-200' },
   { href: '/settings', icon: Settings, label: 'Settings', color: 'text-slate-600', hoverBg: 'hover:bg-slate-100', activeBg: 'bg-slate-100 border-slate-300' },
 ];
 
-const ADMIN_NAV_ITEMS = [
-  { href: '/test-lab', icon: Zap, label: 'Test Lab', color: 'text-fuchsia-600', hoverBg: 'hover:bg-fuchsia-50', activeBg: 'bg-fuchsia-50 border-fuchsia-200' },
-];
+const ADMIN_NAV_ITEMS: any[] = [];
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -74,12 +68,12 @@ export default function Sidebar() {
         {/* Logo */}
         <div className="w-full flex items-center justify-center px-2 py-6 border-b border-slate-200 min-h-[80px]">
           {isExpanded ? (
-            <div className="w-32 h-6 flex flex-shrink-0 items-center justify-center animate-in fade-in zoom-in-95 duration-200 translate-x-1">
-              <img src="/logo.png?v=2" alt="Apexora Logo" className="w-full h-full object-contain" />
+            <div className="flex flex-shrink-0 items-center justify-center animate-in fade-in zoom-in-95 duration-200 translate-x-1">
+              <span className="text-xl font-black text-slate-900 tracking-tight">First <span className="text-blue-600">Hey</span></span>
             </div>
           ) : (
-            <div className="w-10 h-10 flex-shrink-0 rounded-xl flex items-center justify-center animate-in fade-in zoom-in-95 duration-200 p-0.5">
-              <img src="/ax_icon.png?v=1" alt="AX Logo" className="w-full h-full object-contain drop-shadow-sm" />
+            <div className="w-10 h-10 flex-shrink-0 rounded-xl flex items-center justify-center animate-in fade-in zoom-in-95 duration-200 p-0.5 bg-blue-600 text-white font-black text-lg">
+              FH
             </div>
           )}
         </div>

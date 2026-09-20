@@ -9,6 +9,8 @@ export const CardOcrOutputSchema = z.object({
   title: z.string().nullable().describe('The job title or designation'),
   email: z.string().email().nullable().describe('The email address'),
   phone: z.string().nullable().describe('The primary contact phone number'),
+  secondary_phone: z.string().nullable().describe('The secondary contact phone number or mobile, if present'),
+  website: z.string().nullable().describe('The website URL'),
   confidence_score: z.number().min(0).max(100).describe('Estimated confidence in extraction accuracy (0-100)'),
 });
 
@@ -41,7 +43,7 @@ export class CardOcrAgent {
       },
     };
 
-    const prompt = `Extract the contact details from this business card image and return ONLY valid JSON with these exact keys: name, company, title, email, phone, confidence_score. Use null for any field that is not visible on the card. confidence_score should be a number from 0 to 100.`;
+    const prompt = `Extract the contact details from this business card image and return ONLY valid JSON with these exact keys: name, company, title, email, phone, secondary_phone, website, confidence_score. Use null for any field that is not visible on the card. If there are multiple phone numbers, put the primary one in 'phone' and the second one in 'secondary_phone'. confidence_score should be a number from 0 to 100.`;
 
     let attempts = 0;
     const maxAttempts = 3;
@@ -59,11 +61,11 @@ export class CardOcrAgent {
         attempts++;
         console.warn(`OCR attempt ${attempts} failed:`, error.message || error);
         
-        const isRateLimit = error.status === 429 || 
-                           (error.message && (error.message.includes('429') || error.message.includes('Quota exceeded') || error.message.includes('Too Many Requests')));
+        const isRateLimit = error.status === 429 || error.status === 503 ||
+                           (error.message && (error.message.includes('429') || error.message.includes('503') || error.message.includes('Quota exceeded') || error.message.includes('Too Many Requests') || error.message.includes('Service Unavailable')));
                            
         if (isRateLimit && attempts < maxAttempts) {
-          const waitTime = attempts * 5000; // 5s, 10s backoff
+          const waitTime = 20000; // Wait 20 seconds to clear the 19s lock
           console.log(`Rate limited by Gemini. Waiting ${waitTime/1000}s before retrying...`);
           await delay(waitTime);
           continue;
@@ -76,12 +78,14 @@ export class CardOcrAgent {
           title: null,
           email: null,
           phone: null,
+          secondary_phone: null,
+          website: null,
           confidence_score: 0.0,
         };
       }
     }
     
     // Fallback if loop exits
-    return { name: null, company: null, title: null, email: null, phone: null, confidence_score: 0.0 };
+    return { name: null, company: null, title: null, email: null, phone: null, secondary_phone: null, website: null, confidence_score: 0.0 };
   }
 }

@@ -11,6 +11,18 @@ interface LeadStatusBadgeProps {
 export default function LeadStatusBadge({ status }: LeadStatusBadgeProps) {
   const getStatusStyles = (leadStatus: string) => {
     switch (leadStatus) {
+      case 'contacted':
+        return {
+          bg: 'bg-purple-500/10 text-purple-600 border-purple-500/20',
+          dot: 'bg-purple-500 shadow-[0_0_8px_#a855f7]',
+          label: 'Contacted',
+        };
+      case 'failed_to_contact':
+        return {
+          bg: 'bg-orange-500/10 text-orange-600 border-orange-500/20',
+          dot: 'bg-orange-500 shadow-[0_0_8px_#f97316]',
+          label: 'Contact Failed',
+        };
       case 'synced':
         return {
           bg: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',

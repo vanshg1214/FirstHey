@@ -18,13 +18,7 @@ export async function GET(req: NextRequest) {
     
     let query = supabase
       .from('leads')
-      .select(`
-        *,
-        recordings (id, audio_url, transcript, status),
-        card_scans (id, image_url, extracted_fields, confidence),
-        followups (id, sequence_position, channel, status, scheduled_for, sent_at, opened_at),
-        crm_sync_log (id, target_system, status, error_message, synced_at)
-      `)
+      .select('*')
       .order('created_at', { ascending: false })
       .eq('captured_by', user.id);
 
@@ -84,6 +78,8 @@ export async function POST(req: NextRequest) {
     const { data, error } = await supabaseAdmin.from('leads').insert(newLead).select().single();
 
     if (error) throw new Error(error.message);
+
+    // ZOHO CRM SYNC REMOVED FOR FIRSTHEY
 
     return NextResponse.json({ data });
   } catch (error: any) {

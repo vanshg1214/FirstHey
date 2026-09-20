@@ -9,6 +9,7 @@ interface ExtractedFields {
   title: string | null;
   email: string | null;
   phone: string | null;
+  secondary_phone: string | null;
   confidence: number;
 }
 
@@ -165,6 +166,22 @@ export default function ExtractedFieldsForm({
             id="phone"
             name="phone"
             value={fields.phone || ''}
+            onChange={handleChange}
+            className="w-full bg-white/50 border border-slate-200 focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder-zinc-600 transition-all outline-none shadow-inner"
+          />
+        </div>
+
+        {/* Secondary Phone Number */}
+        <div className="space-y-1.5">
+          <label htmlFor="secondary_phone" className="text-xs font-medium text-slate-500 flex items-center gap-1.5">
+            <Phone className="w-3.5 h-3.5 text-slate-600 opacity-70" />
+            Secondary Phone
+          </label>
+          <input
+            type="tel"
+            id="secondary_phone"
+            name="secondary_phone"
+            value={fields.secondary_phone || ''}
             onChange={handleChange}
             className="w-full bg-white/50 border border-slate-200 focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder-zinc-600 transition-all outline-none shadow-inner"
           />

@@ -19,7 +19,7 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
-  title: "Apexora | Live Workspace",
+  title: "FirstHey | Live Workspace",
   description: "Enterprise exhibition lead capture and intelligence platform.",
   manifest: "/manifest.json",
 };

@@ -31,20 +31,8 @@ export class LeadsRepository {
 
     if (leadError) throw new Error(`Database error creating lead: ${leadError.message}`);
 
-    const { error: recError } = await supabase
-      .from('recordings')
-      .insert({
-        lead_id: lead.id,
-        audio_url: recording.audio_url,
-        transcript: recording.transcript,
-        status: recording.status,
-      });
-
-    if (recError) {
-      await supabase.from('leads').delete().eq('id', lead.id);
-      throw new Error(`Database error creating recording record: ${recError.message}`);
-    }
-
+    // Voice notes are currently disabled in FirstHey minimal schema.
+    // We just return the created lead.
     return lead;
   }
 
@@ -54,11 +42,7 @@ export class LeadsRepository {
   public static async getLeadById(supabase: SupabaseClient<any, "public", any>, leadId: string) {
     const { data, error } = await supabase
       .from('leads')
-      .select(`
-        *,
-        recordings (id, audio_url, transcript, status),
-        card_scans (id, image_url, extracted_fields, confidence)
-      `)
+      .select('*')
       .eq('id', leadId)
       .single();
 
@@ -73,6 +57,13 @@ export class LeadsRepository {
     const { data, error } = await supabase
       .from('leads')
       .update({
+        name: fields.name || null,
+        company: fields.company || null,
+        title: fields.title || null,
+        email: fields.email || null,
+        phone: fields.phone || null,
+        secondary_phone: fields.secondary_phone || null,
+        website: fields.website || null,
         contact_fields: fields,
         status: status,
       })
@@ -95,17 +86,15 @@ export class LeadsRepository {
     confidence: number
   ) {
     const { data, error } = await supabase
-      .from('card_scans')
-      .upsert({
-        lead_id: leadId,
-        image_url: imageUrl,
-        extracted_fields: extractedFields,
-        confidence,
-      }, { onConflict: 'lead_id' })
+      .from('leads')
+      .update({
+        cardImage: imageUrl
+      })
+      .eq('id', leadId)
       .select()
       .single();
 
-    if (error) throw new Error(`Database error creating card scan record: ${error.message}`);
+    if (error) throw new Error(`Database error updating lead card image: ${error.message}`);
     return data;
   }
 

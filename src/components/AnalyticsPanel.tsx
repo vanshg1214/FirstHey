@@ -84,7 +84,7 @@ export default function AnalyticsPanel({ campaignId }: AnalyticsPanelProps) {
           Actionable Recommendations
         </h3>
         <ul className="space-y-3">
-          {insights.recommendations.map((rec: string, index: number) => (
+          {(insights.recommendations || []).map((rec: string, index: number) => (
             <li key={index} className="flex items-start text-sm text-slate-700 bg-white/5 rounded-lg p-3 border border-slate-200">
               <span className="w-5 h-5 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center text-xs font-bold mr-3 mt-0.5 flex-shrink-0">
                 {index + 1}

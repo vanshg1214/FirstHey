@@ -74,14 +74,7 @@ export async function POST(
       );
     }
 
-    // Link with campaign if provided
-    if (campaignId) {
-      try {
-        await CampaignsRepository.addLeadToCampaign(supabase, campaignId, id);
-      } catch (clError: any) {
-        console.error(`Failed to link lead ${id} to campaign ${campaignId} during save:`, clError.message);
-      }
-    }
+    // Campaigns removed for FirstHey minimal schema
 
     return NextResponse.json({
       data: { success: true },

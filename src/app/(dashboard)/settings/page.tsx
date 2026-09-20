@@ -73,7 +73,6 @@ export default function SettingsPage() {
       let credentials = {};
       if (service === 'gemini') credentials = { apiKey: settings.gemini_api_key };
       if (service === 'smtp') credentials = { user: settings.email_user, pass: settings.email_password };
-      if (service === 'zoho') credentials = { clientId: settings.zoho_client_id, clientSecret: settings.zoho_client_secret, refreshToken: settings.zoho_refresh_token };
 
       const res = await fetch('/api/settings/test', {
         method: 'POST',
@@ -94,31 +93,6 @@ export default function SettingsPage() {
     }
   };
 
-  const handleAutoSetup = async () => {
-    // Check if basic OAuth fields exist
-    if (!settings.zoho_client_id || !settings.zoho_refresh_token || !settings.zoho_client_secret) {
-      addToast('error', 'Please fill in your Zoho Client ID, Client Secret, and Refresh Token first, and click Save.');
-      return;
-    }
-    
-    setIsAutoSettingUp(true);
-    addToast('info', 'Connecting to Zoho API to auto-configure campaign...');
-    try {
-      const res = await fetch('/api/settings/zoho-auto-setup', { method: 'POST' });
-      const data = await res.json();
-      
-      if (data.success && data.campaign_key) {
-        setSettings(prev => ({ ...prev, zoho_campaign_key: data.campaign_key }));
-        addToast('success', 'Campaign auto-created! Please verify it in your Zoho Campaigns dashboard and submit for review.');
-      } else {
-        addToast('error', data.error || 'Failed to auto-create campaign');
-      }
-    } catch (err) {
-      addToast('error', 'Network error during auto-setup');
-    } finally {
-      setIsAutoSettingUp(false);
-    }
-  };
 
   if (isLoading) {
     return (
@@ -231,6 +205,28 @@ export default function SettingsPage() {
                 {testingService === 'smtp' ? 'Testing...' : 'Test Connection'}
               </button>
             </div>
+            
+            <div className="mb-6 rounded-lg bg-blue-50 p-4 border border-blue-100">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-blue-800">How to set up your Gmail integration:</h3>
+                  <div className="mt-2 text-xs text-blue-700">
+                    <ol className="list-decimal pl-5 space-y-1">
+                      <li>Ensure your Gmail account has <strong>2-Step Verification</strong> turned on.</li>
+                      <li>Go to your Google Account Manage page → Security → <strong>App Passwords</strong>.</li>
+                      <li>Select "Other (Custom name)" and type "FirstHey", then click Generate.</li>
+                      <li>Copy the 16-digit code and paste it into the <strong>App Password</strong> field below (no spaces needed).</li>
+                    </ol>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
               <div className="sm:col-span-2">
                 <label className="block text-sm font-medium text-slate-700">Sender Name</label>
@@ -275,130 +271,6 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          {/* Zoho Settings */}
-          <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-slate-900 flex items-center">
-                <svg className="w-5 h-5 mr-2 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                </svg>
-                Zoho CRM
-              </h2>
-              <button
-                type="button"
-                onClick={() => handleTestConnection('zoho')}
-                disabled={testingService === 'zoho' || !settings.zoho_client_id || !settings.zoho_refresh_token}
-                className="px-3 py-1.5 text-xs font-bold rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-50"
-              >
-                {testingService === 'zoho' ? 'Testing...' : 'Test Connection'}
-              </button>
-            </div>
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-              <div className="sm:col-span-2">
-                <label className="block text-sm font-medium text-slate-700">Client ID</label>
-                <div className="mt-1">
-                  <input
-                    type="text"
-                    name="zoho_client_id"
-                    value={settings.zoho_client_id || ''}
-                    onChange={handleChange}
-                    className="block w-full rounded-md border border-slate-300 bg-white px-4 py-2 text-slate-900 focus:border-blue-500 focus:ring-blue-500 sm:text-sm shadow-sm"
-                  />
-                </div>
-              </div>
-              <div className="sm:col-span-2">
-                <label className="block text-sm font-medium text-slate-700">Client Secret</label>
-                <div className="mt-1">
-                  <input
-                    type="password"
-                    name="zoho_client_secret"
-                    value={settings.zoho_client_secret || ''}
-                    onChange={handleChange}
-                    className="block w-full rounded-md border border-slate-300 bg-white px-4 py-2 text-slate-900 focus:border-blue-500 focus:ring-blue-500 sm:text-sm shadow-sm"
-                  />
-                </div>
-              </div>
-              <div className="sm:col-span-2">
-                <label className="block text-sm font-medium text-slate-700">Refresh Token</label>
-                <div className="mt-1">
-                  <input
-                    type="password"
-                    name="zoho_refresh_token"
-                    value={settings.zoho_refresh_token || ''}
-                    onChange={handleChange}
-                    className="block w-full rounded-md border border-slate-300 bg-white px-4 py-2 text-slate-900 focus:border-blue-500 focus:ring-blue-500 sm:text-sm shadow-sm"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700">CRM API URL</label>
-                <div className="mt-1">
-                  <input
-                    type="text"
-                    name="zoho_api_url"
-                    value={settings.zoho_api_url || ''}
-                    onChange={handleChange}
-                    className="block w-full rounded-md border border-slate-300 bg-white px-4 py-2 text-slate-900 focus:border-blue-500 focus:ring-blue-500 sm:text-sm shadow-sm"
-                    placeholder="https://www.zohoapis.in"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700">Accounts URL</label>
-                <div className="mt-1">
-                  <input
-                    type="text"
-                    name="zoho_accounts_url"
-                    value={settings.zoho_accounts_url || ''}
-                    onChange={handleChange}
-                    className="block w-full rounded-md border border-slate-300 bg-white px-4 py-2 text-slate-900 focus:border-blue-500 focus:ring-blue-500 sm:text-sm shadow-sm"
-                    placeholder="https://accounts.zoho.in"
-                  />
-                </div>
-              </div>
-              <div className="sm:col-span-2 pt-4 border-t border-slate-100">
-                <h3 className="text-sm font-semibold text-slate-800 mb-4">Zoho Campaigns (Email Dispatch & Analytics)</h3>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700">Campaigns API URL</label>
-                <div className="mt-1">
-                  <input
-                    type="text"
-                    name="zoho_campaigns_api_url"
-                    value={settings.zoho_campaigns_api_url || ''}
-                    onChange={handleChange}
-                    className="block w-full rounded-md border border-slate-300 bg-white px-4 py-2 text-slate-900 focus:border-blue-500 focus:ring-blue-500 sm:text-sm shadow-sm"
-                    placeholder="https://campaigns.zoho.in/api/v1.1"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700">Target Campaign Key</label>
-                <div className="mt-1">
-                  <input
-                    type="text"
-                    name="zoho_campaign_key"
-                    value={settings.zoho_campaign_key || ''}
-                    onChange={handleChange}
-                    className="block w-full rounded-md border border-slate-300 bg-white px-4 py-2 text-slate-900 focus:border-blue-500 focus:ring-blue-500 sm:text-sm shadow-sm"
-                    placeholder="Found in Zoho Campaigns Dashboard"
-                  />
-                  <div className="mt-2 flex items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={handleAutoSetup}
-                      disabled={isAutoSettingUp}
-                      className="inline-flex items-center rounded-md bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700 shadow-sm hover:bg-blue-100 disabled:opacity-50"
-                    >
-                      {isAutoSettingUp ? 'Setting up...' : 'Auto-Setup Zoho Campaign'}
-                    </button>
-                    <p className="text-xs text-slate-500">Creates the campaign automatically and fetches the key.</p>
-                  </div>
-                </div>
-                <p className="mt-3 text-xs text-slate-500">If provided, the AI CRM will send emails via Zoho Campaigns instead of normal SMTP to track detailed engagement analytics.</p>
-              </div>
-            </div>
-          </div>
 
           <div className="flex justify-between items-center pt-8 mt-8 border-t border-slate-200">
             <button

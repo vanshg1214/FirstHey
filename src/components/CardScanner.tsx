@@ -101,14 +101,16 @@ export default function CardScanner({ onScanComplete, isProcessing: externalProc
         body: JSON.stringify({ image }),
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to parse card. Please try again.');
+      let result;
+      try {
+        result = await response.json();
+      } catch (e) {
+        throw new Error('Server returned an invalid response.');
       }
 
-      const result = await response.json();
-      
-      if (result.error) {
-        throw new Error(result.error.message || 'Scanning failed.');
+      if (!response.ok || result.error) {
+        const backendError = result?.error?.message || result?.message || `Error ${response.status}: ${response.statusText}`;
+        throw new Error(backendError);
       }
 
       onScanComplete({

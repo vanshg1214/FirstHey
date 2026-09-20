@@ -1,5 +1,3 @@
-import { google } from 'googleapis';
-
 interface SheetLeadFields {
   firstName?: string;
   lastName?: string;
@@ -13,82 +11,52 @@ interface SheetLeadFields {
 
 export class SheetsService {
   /**
-   * Initializes and returns an authenticated Google Sheets client.
-   */
-  private static async getSheetsClient() {
-    const serviceAccountJson = process.env.GOOGLE_SERVICE_ACCOUNT_JSON || '';
-    const spreadsheetId = process.env.GOOGLE_SHEET_ID || '';
-
-    if (!serviceAccountJson || !spreadsheetId) {
-      throw new Error('Google Sheets configuration (GOOGLE_SERVICE_ACCOUNT_JSON and GOOGLE_SHEET_ID) is missing.');
-    }
-
-    let credentials;
-    try {
-      credentials = JSON.parse(serviceAccountJson);
-    } catch {
-      // Handle base64 encoded service account JSON string if provided
-      try {
-        const decoded = Buffer.from(serviceAccountJson, 'base64').toString('utf8');
-        credentials = JSON.parse(decoded);
-      } catch {
-        throw new Error('GOOGLE_SERVICE_ACCOUNT_JSON must be a valid JSON string or a base64 encoded JSON string.');
-      }
-    }
-
-    if (!credentials.client_email || !credentials.private_key) {
-      throw new Error('Google service account credentials must contain client_email and private_key.');
-    }
-
-    const auth = new google.auth.JWT({
-      email: credentials.client_email,
-      key: credentials.private_key.replace(/\\n/g, '\n'), // replace escaped newlines with literal newlines
-      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-    });
-
-    return {
-      sheets: google.sheets({ version: 'v4', auth }),
-      spreadsheetId,
-    };
-  }
-
-  /**
-   * Appends lead fields to the Google Sheet as a fallback CRM mechanism.
-   * Runs up to 3 retries on transient errors.
+   * Appends lead fields to the Google Sheet using a Google Apps Script Webhook.
+   * This avoids needing complex Google Cloud Service Accounts.
    */
   public static async appendLead(fields: SheetLeadFields): Promise<{ crmRecordId: string }> {
-    const { sheets, spreadsheetId } = await this.getSheetsClient();
-    
-    const timestamp = new Date().toISOString();
-    const rowValues = [
-      fields.leadId || '',
-      timestamp,
-      fields.firstName || '',
-      fields.lastName || '',
-      fields.email || '',
-      fields.phone || '',
-      fields.company || '',
-      fields.title || '',
-      fields.description || '',
-    ];
+    const webhookUrl = process.env.GOOGLE_SHEET_WEBHOOK_URL;
+
+    if (!webhookUrl) {
+      throw new Error('GOOGLE_SHEET_WEBHOOK_URL is missing in environment variables. Please deploy the Apps Script and add the URL.');
+    }
+
+    const payload = {
+      leadId: fields.leadId || '',
+      timestamp: new Date().toISOString(),
+      firstName: fields.firstName || '',
+      lastName: fields.lastName || '',
+      email: fields.email || '',
+      phone: fields.phone || '',
+      company: fields.company || '',
+      title: fields.title || '',
+      description: fields.description || '',
+    };
 
     let retries = 3;
     let delay = 1000;
 
     while (retries > 0) {
       try {
-        const response = await sheets.spreadsheets.values.append({
-          spreadsheetId,
-          range: 'Sheet1!A:I',
-          valueInputOption: 'USER_ENTERED',
-          insertDataOption: 'INSERT_ROWS',
-          requestBody: {
-            values: [rowValues],
+        const response = await fetch(webhookUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
           },
+          body: JSON.stringify(payload),
         });
 
-        const updatedRange = response.data.updates?.updatedRange || 'unknown-range';
-        return { crmRecordId: `sheets:${updatedRange}` };
+        if (!response.ok) {
+          throw new Error(`Webhook returned status: ${response.status}`);
+        }
+
+        const data = await response.json().catch(() => ({}));
+        
+        if (data.status !== 'success') {
+           throw new Error(data.message || 'Webhook did not return success status');
+        }
+
+        return { crmRecordId: `sheets:webhook-${Date.now()}` };
       } catch (error) {
         retries--;
         if (retries === 0) {
@@ -99,6 +67,6 @@ export class SheetsService {
       }
     }
 
-    throw new Error('Failed to append lead to Google Sheet after 3 retries.');
+    throw new Error('Failed to append lead to Google Sheet webhook after 3 retries.');
   }
 }

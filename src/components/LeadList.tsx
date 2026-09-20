@@ -47,7 +47,7 @@ function calcLeadScore(lead: any): number {
   const ctx = lead.context_summary || {};
   if (contact.email) score += 2;
   if (ctx.sentiment === 'positive') score += 3;
-  if ((ctx.open_count || 0) > 0) score += 2;
+  if ((lead.open_count || 0) > 0) score += 2;
   if (lead.zoho_analytics?.clicks > 0) score += 2;
   if (lead.card_scans) score += 1;
   return Math.min(score, 10);
@@ -158,7 +158,7 @@ export default function LeadList({
                       <div>
                         <div className="font-semibold text-slate-900 flex items-center gap-1.5">
                           <span>{name}</span>
-                          {lead.context_summary?.is_hot && (
+                          {((lead.open_count || 0) >= 2) && (
                             <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase bg-rose-500/20 text-rose-400 border border-rose-500/30 shadow-[0_0_10px_rgba(244,63,94,0.1)] select-none animate-pulse">
                               🔥 Hot
                             </span>
@@ -168,12 +168,12 @@ export default function LeadList({
                           {contact.email && (
                             <span className="text-[10px] text-slate-400">{contact.email}</span>
                           )}
-                          {(lead.followups?.length > 0 || (lead.context_summary?.open_count || 0) > 0) && (
+                          {((lead.open_count || 0) > 0) && (
                             <>
                               {contact.email && <span className="text-[10px] text-zinc-700 select-none">•</span>}
                               <span className="text-[9px] font-semibold text-slate-500 bg-white/60 border border-slate-200 px-1.5 py-0.5 rounded flex items-center gap-1 select-none">
                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                                👁️ {lead.context_summary?.open_count || 0} views
+                                👁️ {lead.open_count || 0} views
                               </span>
                             </>
                           )}
@@ -274,7 +274,7 @@ export default function LeadList({
                   <div className="space-y-0.5">
                     <h4 className="font-bold text-slate-900 flex items-center gap-1.5 text-sm">
                       <span>{name}</span>
-                      {lead.context_summary?.is_hot && (
+                      {((lead.open_count || 0) >= 2) && (
                         <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase bg-rose-500/20 text-rose-400 border border-rose-500/30 select-none animate-pulse">
                           🔥 Hot
                         </span>
@@ -285,10 +285,10 @@ export default function LeadList({
                     )}
                     <div className="flex items-center gap-2 mt-1">
                       <LeadScoreBadge score={score} />
-                      {(lead.followups?.length > 0 || (lead.context_summary?.open_count || 0) > 0) && (
+                      {((lead.open_count || 0) > 0) && (
                         <span className="text-[9px] font-semibold text-slate-500 bg-white/60 border border-slate-200 px-1.5 py-0.5 rounded flex items-center gap-1 select-none">
                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                          👁️ {lead.context_summary?.open_count || 0} views
+                          👁️ {lead.open_count || 0} views
                         </span>
                       )}
                     </div>

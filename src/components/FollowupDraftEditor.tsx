@@ -1,33 +1,36 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { MailOpen, Edit, Save, Send, AlertTriangle, CheckCircle, Paperclip, X } from 'lucide-react';
+import { MailOpen, Edit, Save, Send, AlertTriangle, CheckCircle, Paperclip, X, MessageCircle } from 'lucide-react';
 import { useToast } from './Toast';
 
 interface EmailDraft {
   subject: string;
-  body: string;
+  emailBody: string;
+  whatsappBody: string;
 }
 
 interface FollowupDraftEditorProps {
   leadId: string;
   initialDraft: EmailDraft;
-  onSuccess: (syncedTo: 'zoho' | 'sheets') => void;
+  phoneNumber: string;
+  onSuccess: (syncedTo: 'zoho' | 'sheets' | 'direct') => void;
   onCancel: () => void;
 }
 
 export default function FollowupDraftEditor({
   leadId,
   initialDraft,
+  phoneNumber,
   onSuccess,
   onCancel,
 }: FollowupDraftEditorProps) {
   const [draft, setDraft] = useState<EmailDraft>({ ...initialDraft });
+  const [activeTab, setActiveTab] = useState<'email' | 'whatsapp'>('email');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [syncStatus, setSyncStatus] = useState<{ status: 'idle' | 'success' | 'failed'; system?: 'zoho' | 'sheets' }>({
-    status: 'idle',
-  });
+  const [emailSent, setEmailSent] = useState(false);
+  const [whatsappSent, setWhatsappSent] = useState(false);
   const [attachments, setAttachments] = useState<{ filename: string; content: string; encoding: string }[]>([]);
   const { addToast } = useToast();
 
@@ -87,7 +90,7 @@ export default function FollowupDraftEditor({
         },
         body: JSON.stringify({
           subject: draft.subject,
-          body: draft.body,
+          body: draft.emailBody,
           attachments,
         }),
       });
@@ -95,24 +98,63 @@ export default function FollowupDraftEditor({
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error?.message || 'Syncing failed. Both CRM and fallback were unreachable.');
+        throw new Error(result.error?.message || 'Failed to send email.');
       }
 
-      setSyncStatus({
-        status: 'success',
-        system: result.data.syncedTo,
-      });
-      addToast('success', 'Email Sent & Synced!', `Synced to ${result.data.syncedTo === 'zoho' ? 'Zoho CRM' : 'Google Sheets'}`);
+      setEmailSent(true);
+      addToast('success', 'Email Sent!', `Successfully dispatched directly via Nodemailer`);
 
-      setTimeout(() => {
-        onSuccess(result.data.syncedTo);
-      }, 1500);
+      // Switch to WhatsApp tab if not sent yet
+      if (!whatsappSent) {
+        setActiveTab('whatsapp');
+      }
     } catch (err: any) {
-      setError(err.message || 'An error occurred during approval.');
-      setSyncStatus({ status: 'failed' });
-      addToast('error', 'Sync Failed', err.message || 'Both CRM and fallback were unreachable.');
+      setError(err.message || 'An error occurred during sending.');
+      addToast('error', 'Send Failed', err.message || 'Could not send the email.');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleWhatsAppSend = () => {
+    // 1. Clean phone number (remove everything except numbers and '+')
+    let cleanPhone = phoneNumber.replace(/[^\d+]/g, '');
+    
+    // 2. Fallback to add country code if missing
+    if (cleanPhone && !cleanPhone.startsWith('+')) {
+      // Assuming US/Canada by default if they don't provide one, but typically user should provide full number.
+      // If no + is present, WhatsApp sometimes requires it.
+      if (cleanPhone.length === 10) cleanPhone = '1' + cleanPhone;
+    }
+
+    if (!cleanPhone) {
+      setError("No valid phone number found for this lead.");
+      return;
+    }
+
+    // 3. Update lead status in background
+    fetch(`/api/leads/${leadId}/status`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        status: 'contacted',
+      }),
+    }).catch(console.error);
+
+    // 4. Open WA.me link
+    const encodedMessage = encodeURIComponent(draft.whatsappBody);
+    const waUrl = `https://wa.me/${cleanPhone.replace('+', '')}?text=${encodedMessage}`;
+    window.open(waUrl, '_blank');
+
+    setWhatsappSent(true);
+    addToast('success', 'WhatsApp Opened!', 'Your WhatsApp application has been opened with the draft.');
+  };
+
+  const handleClose = () => {
+    if (emailSent || whatsappSent) {
+      onSuccess('direct');
+    } else {
+      onCancel();
     }
   };
 
@@ -125,29 +167,40 @@ export default function FollowupDraftEditor({
         </h3>
       </div>
 
-      {syncStatus.status === 'success' ? (
-        <div className="py-8 text-center space-y-4">
-          <div className="w-16 h-16 bg-emerald-500/10 text-emerald-400 rounded-full flex items-center justify-center mx-auto border border-emerald-500/20 animate-bounce">
-            <CheckCircle className="w-8 h-8" />
-          </div>
-          <div className="space-y-1">
-            <h4 className="font-semibold text-slate-900 text-base">Draft Approved & Synced!</h4>
-            <p className="text-xs text-slate-500">
-              Lead details saved and synced to{' '}
-              <span className="font-semibold text-slate-600 capitalize">
-                {syncStatus.system === 'zoho' ? 'Zoho CRM' : 'Google Sheets Fallback'}
-              </span>
-            </p>
-            <p className="text-[10px] text-slate-400">First follow-up email scheduled for 1 hour from now.</p>
-          </div>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          <p className="text-xs text-slate-500 mb-2">
-            The AI drafted this email based on your conversation transcript. Adjust any wording before scheduling.
-          </p>
+      <div className="space-y-4">
+        <p className="text-xs text-slate-500 mb-2">
+          The AI drafted this message based on your conversation transcript. You can send an Email, a WhatsApp, or both!
+        </p>
 
-          {/* Subject Line */}
+          {/* Tabs */}
+          <div className="flex p-1 space-x-1 bg-slate-100/50 rounded-xl mb-4 border border-slate-200">
+            <button
+              onClick={() => setActiveTab('email')}
+              className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 text-sm font-medium rounded-lg transition-all ${
+                activeTab === 'email'
+                  ? 'bg-white text-blue-700 shadow-sm border border-slate-200/60'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
+              }`}
+            >
+              <MailOpen className="w-4 h-4" />
+              Email {emailSent && <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />}
+            </button>
+            <button
+              onClick={() => setActiveTab('whatsapp')}
+              className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 text-sm font-medium rounded-lg transition-all ${
+                activeTab === 'whatsapp'
+                  ? 'bg-[#25D366]/10 text-[#128C7E] shadow-sm border border-[#25D366]/20'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
+              }`}
+            >
+              <MessageCircle className="w-4 h-4" />
+              WhatsApp {whatsappSent && <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />}
+            </button>
+          </div>
+
+          {activeTab === 'email' && (
+            <>
+              {/* Subject Line */}
           <div className="space-y-1.5">
             <label htmlFor="subject" className="text-xs font-medium text-slate-500 flex items-center gap-1.5">
               <Edit className="w-3.5 h-3.5 text-slate-600" />
@@ -172,8 +225,8 @@ export default function FollowupDraftEditor({
             </label>
             <textarea
               id="body"
-              name="body"
-              value={draft.body}
+              name="emailBody"
+              value={draft.emailBody}
               onChange={handleInputChange}
               required
               rows={8}
@@ -206,6 +259,32 @@ export default function FollowupDraftEditor({
               className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-white/5 file:text-slate-700 hover:file:bg-white/10 transition-all cursor-pointer"
             />
           </div>
+          </>
+          )}
+
+          {activeTab === 'whatsapp' && (
+            <div className="space-y-1.5 animate-in fade-in duration-300">
+              <label htmlFor="whatsappBody" className="text-xs font-medium text-slate-500 flex items-center gap-1.5">
+                <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
+                WhatsApp Message
+              </label>
+              <textarea
+                id="whatsappBody"
+                name="whatsappBody"
+                value={draft.whatsappBody}
+                onChange={handleInputChange}
+                required
+                rows={6}
+                className="w-full bg-white/50 border border-[#25D366]/30 focus:border-[#25D366] focus:ring-1 focus:ring-[#25D366]/20 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder-zinc-600 transition-all outline-none font-sans leading-relaxed resize-none shadow-inner"
+              />
+              {!phoneNumber && (
+                 <div className="p-3 mt-2 bg-amber-50 border border-amber-200 text-amber-700 rounded-lg text-xs flex items-start gap-2">
+                   <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                   <span>Lead has no phone number recorded. Please update their profile first.</span>
+                 </div>
+              )}
+            </div>
+          )}
 
           {error && (
             <div className="p-3 bg-red-950/30 border border-red-500/20 text-red-400 rounded-lg text-xs flex items-start gap-2">
@@ -217,29 +296,43 @@ export default function FollowupDraftEditor({
           {/* Action buttons */}
           <div className="flex items-center gap-3 pt-3 border-t border-slate-200/40">
             <button
-              onClick={onCancel}
+              onClick={handleClose}
               disabled={isSubmitting}
               className="flex-1 py-2.5 px-4 rounded-xl border border-slate-200 text-sm font-medium text-slate-500 hover:text-zinc-200 hover:bg-slate-50 transition-all"
             >
-              Back
+              {(emailSent || whatsappSent) ? 'Done' : 'Back'}
             </button>
             <button
-              onClick={handleApprove}
-              disabled={isSubmitting}
-              className="flex-1 py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-slate-800 text-sm font-medium text-slate-900 flex items-center justify-center gap-1.5 shadow-sm hover:scale-[1.01] transition-all"
+              onClick={activeTab === 'email' ? handleApprove : handleWhatsAppSend}
+              disabled={isSubmitting || (activeTab === 'whatsapp' && !phoneNumber) || (activeTab === 'email' && emailSent)}
+              className={`flex-1 py-2.5 px-4 rounded-xl text-sm font-medium flex items-center justify-center gap-1.5 shadow-sm hover:scale-[1.01] transition-all ${
+                activeTab === 'email' && emailSent
+                  ? 'bg-emerald-100 text-emerald-700 cursor-not-allowed'
+                  : activeTab === 'whatsapp' 
+                  ? 'bg-[#25D366] hover:bg-[#128C7E] text-white disabled:bg-slate-300' 
+                  : 'bg-blue-600 hover:bg-slate-800 text-white disabled:bg-slate-300'
+              }`}
             >
               {isSubmitting ? (
-                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></span>
               ) : (
                 <>
-                  <Send className="w-4 h-4" />
-                  Approve & Sync
+                  {activeTab === 'email' && emailSent ? (
+                    <>
+                      <CheckCircle className="w-4 h-4" />
+                      Email Sent!
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4" />
+                      {activeTab === 'whatsapp' ? 'Send via WhatsApp' : 'Send Email'}
+                    </>
+                  )}
                 </>
               )}
             </button>
           </div>
         </div>
-      )}
     </div>
   );
 }

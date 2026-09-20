@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Lottie } from 'lottie-react';
+const AnyLottie = Lottie as any;
 
 interface DynamicLoaderProps {
   messages?: string[];
@@ -27,9 +28,16 @@ export function DynamicLoader({
   useEffect(() => {
     // Fetch the lottie json dynamically
     fetch(animationUrl)
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error('Response not ok');
+        const contentType = res.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+           throw new TypeError("Not a JSON response");
+        }
+        return res.json();
+      })
       .then(data => setAnimationData(data))
-      .catch(err => console.error("Failed to load Lottie animation", err));
+      .catch(err => console.warn("Failed to load Lottie animation, falling back to CSS spinner"));
   }, [animationUrl]);
 
   useEffect(() => {
@@ -46,11 +54,13 @@ export function DynamicLoader({
     <div className={`flex flex-col items-center justify-center p-8 ${className}`}>
       <div className="w-48 h-48 mb-4 relative flex items-center justify-center">
         {animationData ? (
-          <Lottie 
-            src={animationData} 
-            loop={true} 
-            style={{ width: '100%', height: '100%' }} 
-          />
+          <>
+            <AnyLottie 
+              animationData={animationData} 
+              loop={true} 
+              style={{ width: '100%', height: '100%' }} 
+            />
+          </>
         ) : (
           <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
         )}

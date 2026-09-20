@@ -5,6 +5,9 @@ export interface CampaignInsert {
   name: string;
   description?: string;
   created_by?: string;
+  zoho_campaign_key?: string;
+  zoho_list_key?: string;
+  zoho_list_name?: string;
 }
 
 export class CampaignsRepository {
@@ -19,6 +22,9 @@ export class CampaignsRepository {
         name: campaignData.name,
         description: campaignData.description || null,
         created_by: campaignData.created_by || null,
+        zoho_campaign_key: campaignData.zoho_campaign_key || null,
+        zoho_list_key: campaignData.zoho_list_key || null,
+        zoho_list_name: campaignData.zoho_list_name || null,
         status: 'active'
       })
       .select()

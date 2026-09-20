@@ -69,7 +69,7 @@ export default function PWAInstallPrompt() {
                 <Download className="w-6 h-6 text-slate-600" />
               </div>
               <div>
-                <h4 className="text-slate-900 font-bold text-sm">Install Apexora</h4>
+                <h4 className="text-slate-900 font-bold text-sm">Install FirstHey</h4>
                 <p className="text-slate-500 text-xs mt-0.5">Add to your home screen for offline capture mode.</p>
               </div>
             </div>

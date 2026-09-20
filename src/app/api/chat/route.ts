@@ -89,7 +89,7 @@ export async function POST(req: NextRequest) {
 - To improve this campaign, analyze its performance metrics against its goal. If open rates are low, suggest trying different subject lines. If hot leads are low, suggest targeting a different persona.`;
     }).join('\n\n') || 'No active campaigns found.';
 
-    const systemInstruction = `You are an elite AI Sales Assistant embedded inside Apexora AI CRM.
+    const systemInstruction = `You are an elite AI Sales Assistant embedded inside FirstHey AI CRM.
 Your role is to help the user manage leads, analyze their pipeline, research companies, and identify the best sales opportunities.
 
 ## What This Company Offers:

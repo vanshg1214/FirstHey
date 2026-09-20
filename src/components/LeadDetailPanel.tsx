@@ -25,7 +25,7 @@ import {
 import LeadStatusBadge from './LeadStatusBadge';
 import AudioPlayer from './AudioPlayer';
 import FollowupDraftEditor from './FollowupDraftEditor';
-import TimelinePanel from './TimelinePanel';
+
 import InsightsPanel from './InsightsPanel';
 
 interface LeadDetailPanelProps {
@@ -41,7 +41,7 @@ export default function LeadDetailPanel({ lead, onClose, onRefresh }: LeadDetail
   const [isSavingNotes, setIsSavingNotes] = useState(false);
 
   const contact = lead.contact_fields || {};
-  const context = lead.context_summary || {};
+  const name = lead.name || lead.contact_fields?.name || 'Unknown Lead';
   
   // recordings and card_scans are 1:1 relationships in the schema and are returned as objects,
   // but were previously accessed as arrays (?.[0]), returning undefined.
@@ -55,83 +55,7 @@ export default function LeadDetailPanel({ lead, onClose, onRefresh }: LeadDetail
   const followups = lead.followups || [];
   const syncLogs = lead.crm_sync_log || [];
 
-  const getTimelineEvents = () => {
-    const events = [];
-    
-    // 1. Lead captured
-    if (lead.created_at) {
-      events.push({
-        title: 'Lead Captured',
-        timestamp: lead.created_at,
-        icon: '🎙️',
-        description: 'Prospect conversation recorded at trade show booth.',
-        color: 'bg-slate-800'
-      });
-    }
 
-    // 2. Card scanned
-    if (card && card.image_url) {
-      events.push({
-        title: 'Business Card Scanned',
-        timestamp: card.created_at || lead.created_at,
-        icon: '📇',
-        description: `OCR completed (${Math.round((card.confidence || 0.95) * 100)}% confidence).`,
-        color: 'bg-teal-500'
-      });
-    }
-
-    // 3. Audio processed
-    if (recording && (recording.audio_url || recording.transcript)) {
-      events.push({
-        title: 'Conversation Transcribed',
-        timestamp: recording.created_at || lead.created_at,
-        icon: '📝',
-        description: 'Gemini extracted sales context and verbatim transcript.',
-        color: 'bg-purple-500'
-      });
-    }
-
-    // 4. CRM Sync
-    syncLogs.forEach((log: any) => {
-      events.push({
-        title: `${log.target_system.toUpperCase()} CRM Sync`,
-        timestamp: log.synced_at,
-        icon: log.status === 'success' ? '✅' : '❌',
-        description: log.status === 'success' 
-          ? `Lead pushed successfully to ${log.target_system === 'zoho' ? 'Zoho CRM' : 'Google Sheets'}.`
-          : `Sync attempt failed: ${log.error_message || 'Unknown error'}.`,
-        color: log.status === 'success' ? 'bg-emerald-500' : 'bg-red-500'
-      });
-    });
-
-    // 5. Follow-ups
-    followups.forEach((touch: any) => {
-      if (touch.status === 'sent') {
-        events.push({
-          title: `Touch ${touch.sequence_position} Email Sent`,
-          timestamp: touch.sent_at,
-          icon: '✉️',
-          description: `Touchpoint ${touch.sequence_position} follow-up successfully sent.`,
-          color: 'bg-blue-500'
-        });
-      }
-    });
-
-    // 6. Opens (real-time from followups)
-    followups.forEach((touch: any) => {
-      if (touch.status === 'opened' && touch.opened_at) {
-        events.push({
-          title: `Touch ${touch.sequence_position} Email Opened`,
-          timestamp: touch.opened_at,
-          icon: '👁️',
-          description: `Prospect opened Touch ${touch.sequence_position}. Total opens so far: ${context.open_count || 1}. ${context.is_hot ? '🔥 HOT LEAD' : ''}`,
-          color: context.is_hot ? 'bg-rose-500 animate-pulse' : 'bg-rose-400'
-        });
-      }
-    });
-
-    return events.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-  };
 
   // Delete State
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -148,12 +72,18 @@ export default function LeadDetailPanel({ lead, onClose, onRefresh }: LeadDetail
 
   // Follow-up generation State
   const [isDrafting, setIsDrafting] = useState(false);
-  const [emailDraft, setEmailDraft] = useState<{ subject: string; body: string } | null>(null);
+  const [emailDraft, setEmailDraft] = useState<{ subject: string; emailBody: string; whatsappBody: string } | null>(null);
 
   // Scanning State
   const [isScanningCard, setIsScanningCard] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
   const [cardImageBase64, setCardImageBase64] = useState<string | null>(null);
+
+  // Edit Followup State
+  const [editingFollowupId, setEditingFollowupId] = useState<string | null>(null);
+  const [editingSubject, setEditingSubject] = useState('');
+  const [editingBody, setEditingBody] = useState('');
+  const [isSavingFollowup, setIsSavingFollowup] = useState(false);
 
   // Reset fields when lead changes
   useEffect(() => {
@@ -197,7 +127,8 @@ export default function LeadDetailPanel({ lead, onClose, onRefresh }: LeadDetail
       } else {
         setEmailDraft({
           subject: `Following up from our conversation`,
-          body: `Hi ${contact.name || 'there'},\n\nIt was great speaking with you. Let's connect next week.\n\nBest,\nSales Exec`,
+          emailBody: `Hi ${contact.name || 'there'},\n\nIt was great speaking with you. Let's connect next week.\n\nBest,\nSales Exec`,
+          whatsappBody: `Hi ${contact.name || 'there'}, it was great speaking with you!`,
         });
       }
     } catch (e) {
@@ -258,6 +189,28 @@ export default function LeadDetailPanel({ lead, onClose, onRefresh }: LeadDetail
       setError(err.message || 'An error occurred.');
     } finally {
       setIsSavingFields(false);
+    }
+  };
+
+  const handleSaveFollowup = async (followupId: string) => {
+    setIsSavingFollowup(true);
+    try {
+      const response = await fetch(`/api/followups/${followupId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subject: editingSubject,
+          body: editingBody,
+        }),
+      });
+      if (response.ok) {
+        setEditingFollowupId(null);
+        onRefresh();
+      }
+    } catch (err) {
+      console.error('Failed to save followup edit', err);
+    } finally {
+      setIsSavingFollowup(false);
     }
   };
 
@@ -381,7 +334,18 @@ export default function LeadDetailPanel({ lead, onClose, onRefresh }: LeadDetail
   const handleWhatsApp = () => {
     if (!contact.phone) return;
     const phone = contact.phone.replace(/[^0-9+]/g, '');
-    const message = encodeURIComponent(`Dear ${contact.name || 'there'} ji, I am following up from our exhibition conversation. Please let me know how I can assist you further.`);
+    
+    // Check if we have an AI-generated whatsapp body
+    const firstFollowup = followups.find((f: any) => f.sequence_position === 1);
+    let messageBody = `Hi ${contact.name || 'there'}, I am following up from our exhibition conversation. Let's connect!`;
+    
+    // Since we don't have whatsapp_body in the DB schema yet, we might use the email draft if available, 
+    // or fallback. For now, just generate a generic clean message.
+    if (emailDraft && emailDraft.whatsappBody) {
+      messageBody = emailDraft.whatsappBody;
+    }
+    
+    const message = encodeURIComponent(messageBody);
     window.open(`https://wa.me/${phone}?text=${message}`, '_blank');
   };
 
@@ -424,11 +388,6 @@ export default function LeadDetailPanel({ lead, onClose, onRefresh }: LeadDetail
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {context.is_hot && (
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-rose-500/20 text-rose-400 border border-rose-500/30 shadow-[0_0_10px_rgba(244,63,94,0.2)] animate-pulse flex items-center gap-1">
-                <span>🔥</span> Hot
-              </span>
-            )}
             <LeadStatusBadge status={lead.status} />
           </div>
         </div>
@@ -679,11 +638,10 @@ export default function LeadDetailPanel({ lead, onClose, onRefresh }: LeadDetail
           </div>
         )}
 
-        {/* 2. Visual Timeline */}
-        <TimelinePanel events={getTimelineEvents()} />
+
 
         {/* 3. AI Extraction Insights */}
-        <InsightsPanel context={context} getSentimentColor={getSentimentColor} leadId={lead.id} onRefresh={onRefresh} />
+
 
         {/* 3. Audio & Transcript */}
         {recording && (recording.audio_url || recording.transcript) && (
@@ -716,141 +674,6 @@ export default function LeadDetailPanel({ lead, onClose, onRefresh }: LeadDetail
           </div>
         )}
 
-        {/* 4. Drip Nurture Sequence */}
-        {followups.length > 0 && (
-          <div className="bg-white border border-slate-200 shadow-sm rounded-xl p-4 rounded-xl space-y-3">
-            <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5 border-b border-slate-200/40 pb-2">
-              <Calendar className="w-4 h-4 text-slate-600" />
-              Drip Nurture Sequence
-            </h4>
-            <div className="relative border-l border-slate-200 ml-2.5 pl-4 space-y-4 text-xs">
-              {(() => {
-                const maxTouch = Math.max(...followups.map((f: any) => f.sequence_position || 1));
-                const isHalted = followups.some((f: any) => f.status === 'paused_adaptive');
-                const isFailed = followups.some((f: any) => f.status === 'send_failed');
-                
-                const projectedFollowups = [...followups];
-                
-                // Add projected future touches up to 4 if the sequence isn't halted/failed
-                if (!isHalted && !isFailed && maxTouch < 4) {
-                  for (let i = maxTouch + 1; i <= 4; i++) {
-                    const lastTouch = projectedFollowups[projectedFollowups.length - 1];
-                    const baseDate = lastTouch?.scheduled_for || lastTouch?.sent_at || new Date().toISOString();
-                    const projectedDate = new Date(new Date(baseDate).getTime() + (3 * 24 * 60 * 60 * 1000)).toISOString();
-                    
-                    projectedFollowups.push({
-                      id: `projected-${i}`,
-                      sequence_position: i,
-                      status: 'projected',
-                      scheduled_for: projectedDate
-                    });
-                  }
-                }
-                
-                return projectedFollowups
-                  .sort((a: any, b: any) => a.sequence_position - b.sequence_position)
-                  .map((touch: any) => {
-                  const isSent = touch.status === 'sent';
-                  const isFailed = touch.status === 'send_failed';
-                  const isSending = touch.status === 'sending';
-                  const isProjected = touch.status === 'projected';
-                  const dateStr = touch.sent_at 
-                    ? new Date(touch.sent_at).toLocaleDateString()
-                    : new Date(touch.scheduled_for).toLocaleDateString();
-
-                  return (
-                    <div key={touch.id} className={`relative ${isProjected ? 'opacity-50 grayscale' : ''}`}>
-                      {/* Timeline dot */}
-                      <span className={`absolute -left-[21.5px] top-1 w-2.5 h-2.5 rounded-full border border-zinc-950 ${
-                        isSent ? 'bg-emerald-400' : isFailed ? 'bg-red-400' : isSending ? 'bg-indigo-400 animate-pulse' : touch.status === 'paused_adaptive' ? 'bg-amber-400' : isProjected ? 'bg-transparent border-dashed border-slate-300' : 'bg-zinc-700'
-                      }`}></span>
-
-                      <div className="flex items-center justify-between mb-0.5">
-                        <span className="font-semibold text-zinc-200">
-                          Touch {touch.sequence_position} {touch.sequence_position === 1 ? '(1-Hour follow-up)' : `(Day ${(touch.sequence_position - 1) * 3})`}
-                        </span>
-                        <span className={`text-[9px] px-1.5 py-0.5 rounded capitalize ${
-                          isSent ? 'bg-emerald-500/10 text-emerald-400' : isFailed ? 'bg-red-500/10 text-red-400' : isSending ? 'bg-slate-800/10 text-slate-600' : touch.status === 'paused_adaptive' ? 'bg-amber-500/10 text-amber-400' : isProjected ? 'bg-slate-50 border border-slate-200 border-dashed text-slate-400' : 'bg-slate-100 text-slate-400'
-                        }`}>
-                          {touch.status === 'paused_adaptive' ? '⏸ Paused — Hot Lead' : isProjected ? 'Lined Up' : touch.status}
-                        </span>
-                      </div>
-                      
-                      <div className="flex items-center gap-1 text-[10px] text-slate-400">
-                        {isSent ? <CheckCircle className="w-3 h-3 text-emerald-500" /> : <Clock className="w-3 h-3" />}
-                        <span>{isSent ? 'Sent on' : isProjected ? 'Expected' : 'Scheduled for'}: {dateStr}</span>
-                      </div>
-                    </div>
-                  );
-                });
-              })()}
-            </div>
-          </div>
-        )}
-
-        {/* 5. Email Open Analytics */}
-        {followups.length > 0 && (
-          <div className="bg-white border border-slate-200 shadow-sm rounded-xl p-4 rounded-xl space-y-3">
-            <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5 border-b border-slate-200/40 pb-2">
-              <Sparkles className="w-4 h-4 text-slate-600" />
-              Email Open Analytics
-            </h4>
-            <div className="grid grid-cols-2 gap-4 text-xs">
-              <div className="bg-white/60 p-3 rounded-lg border border-zinc-900/60 text-center">
-                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">Total Opens</span>
-                <span className="text-xl font-black text-slate-900">{context.open_count || 0}</span>
-              </div>
-              <div className="bg-white/60 p-3 rounded-lg border border-zinc-900/60 text-center flex flex-col justify-center">
-                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">Engagement</span>
-                <span className={`text-[11px] font-bold ${context.is_hot ? 'text-rose-400' : 'text-slate-400'}`}>
-                  {context.is_hot ? '🔥 Hot Lead' : (context.open_count > 0 ? 'Active' : 'No activity')}
-                </span>
-              </div>
-            </div>
-            
-            {/* Open Breakdown */}
-            {context.email_opens && Object.keys(context.email_opens).length > 0 ? (
-              <div className="space-y-1.5 pt-1">
-                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Touchpoint Breakdown</span>
-                <div className="space-y-1">
-                  {Object.entries(context.email_opens).map(([touchNum, count]: [string, any]) => (
-                    <div key={touchNum} className="flex justify-between text-[11px] py-1 px-2.5 bg-slate-50/30 rounded border border-zinc-850">
-                      <span className="text-slate-500">Touchpoint {touchNum === '1' ? '1 (Immediate)' : touchNum}</span>
-                      <span className="font-mono font-semibold text-zinc-200">{count} {count === 1 ? 'open' : 'opens'}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <p className="text-[10px] text-zinc-600 text-center pt-1 italic select-none">
-                Waiting for the prospect to open the follow-up email.
-              </p>
-            )}
-          </div>
-        )}
-
-        {/* 6. Detailed Open History */}
-        {context.open_history && context.open_history.length > 0 && (
-          <div className="bg-white border border-slate-200 shadow-sm rounded-xl p-4 rounded-xl space-y-3">
-            <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5 border-b border-slate-200/40 pb-2">
-              <Clock className="w-4 h-4 text-slate-600" />
-              Detailed Open History
-            </h4>
-            <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
-              {[...context.open_history].reverse().map((event: any, i: number) => {
-                const openNumber = context.open_history.length - i;
-                return (
-                  <div key={i} className="flex justify-between items-center text-[11px] py-1.5 px-3 bg-slate-50/50 rounded-lg border border-slate-200/60">
-                    <span className="font-semibold text-slate-700">
-                      Open {openNumber} <span className="text-slate-400 font-normal">(Touch {event.touch === '1' ? '1' : event.touch})</span>
-                    </span>
-                    <span className="text-slate-500 font-mono tracking-tight">{new Date(event.timestamp).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
 
         {/* Notes Section */}
         <div className="bg-white border border-slate-200 shadow-sm rounded-xl p-4 rounded-xl space-y-3">

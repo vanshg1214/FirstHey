@@ -116,7 +116,7 @@ export default function LoginPage() {
         <div className="w-full max-w-md space-y-6 relative z-10">
           <div className="text-center space-y-4 mb-8">
             <div className="w-48 h-12 flex items-center justify-center mx-auto translate-x-2">
-              <img src="/logo.png?v=2" alt="Apexora Logo" className="w-full h-full object-contain" />
+              <img src="/logo.png?v=2" alt="FirstHey Logo" className="w-full h-full object-contain" />
             </div>
             <h2 className="text-2xl font-black text-slate-900 tracking-tight">Verify Your Email</h2>
             <p className="text-xs text-slate-500 max-w-xs mx-auto">
@@ -197,7 +197,7 @@ export default function LoginPage() {
         {/* Logo Header */}
         <div className="text-center space-y-4 mb-8">
           <div className="w-48 h-12 flex items-center justify-center mx-auto translate-x-2">
-            <img src="/logo.png?v=2" alt="Apexora Logo" className="w-full h-full object-contain" />
+            <img src="/logo.png?v=2" alt="FirstHey Logo" className="w-full h-full object-contain" />
           </div>
           <p className="text-xs text-slate-500 max-w-xs mx-auto">
             {isForgotPassword

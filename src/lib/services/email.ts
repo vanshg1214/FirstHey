@@ -37,6 +37,9 @@ export class EmailService {
 
   /**
    * Sends an email using Nodemailer via Gmail SMTP, or mocks the output to the console if unconfigured.
+   * Sends as multipart (text + html) so Gmail treats it like a real personal email.
+   * The tracking pixel is embedded only in the HTML part.
+   * Gmail will proxy the pixel image through its own servers, masking the external domain.
    */
   public static async sendEmail(
     credentials: { user?: string; pass?: string; fromName?: string },
@@ -58,7 +61,7 @@ export class EmailService {
     }
     const transporter = this.getTransporter(finalUser, finalPass);
     let fromAddress = finalUser || 'test@gmail.com';
-    const fromName = credentials.fromName || 'Sales Team';
+    const fromName = credentials.fromName || finalUser?.split('@')[0] || '';
     let finalTo = to;
 
     if (finalPass?.startsWith('re_')) {
@@ -67,15 +70,28 @@ export class EmailService {
       finalTo = 'avrsmain@gmail.com';
     }
 
-    // Format plain text breaks to HTML breaks
-    let htmlBody = body.replace(/\n/g, '<br />');
+    // Plain text version — always included. This is required for inbox delivery.
+    // By sending ONLY plain text, we avoid all HTML-based spam filters.
+    const textBody = `${body}\n\n${fromName}`;
 
-    // Append 1x1 transparent tracking pixel if leadId is provided (Spam-filter safe)
+    // HTML version — minimal, no styling, looks like a personal reply.
+    const safeBody = body
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/\n/g, '<br>');
+
+    // Build tracking pixel URL (only appended to HTML part)
+    let pixelTag = '';
     if (leadId) {
-      const finalAppUrl = appUrl || process.env.NEXT_PUBLIC_APP_URL || 'https://apexora-ai.vercel.app';
-      const trackingUrl = `${finalAppUrl}/api/leads/${leadId}/track-open${touchPosition ? `?touch=${touchPosition}` : ''}`;
-      htmlBody += `<br /><img src="${trackingUrl}" width="1" height="1" alt="" border="0" style="display:block; opacity:0.01;" />`;
+      const finalAppUrl = appUrl || process.env.NEXT_PUBLIC_APP_URL || '';
+      if (finalAppUrl) {
+        const trackingUrl = `${finalAppUrl}/api/leads/${leadId}/track-open${touchPosition ? `?touch=${touchPosition}` : ''}`;
+        pixelTag = `<img src="${trackingUrl}" width="0" height="0" alt="" style="display:none;" />`;
+      }
     }
+
+    const htmlBody = `<div style="font-family:Arial,sans-serif;font-size:15px;line-height:1.6;color:#1a1a1a;">${safeBody}<br><br>${fromName}</div>${pixelTag}`;
 
     if (!transporter) {
       // Mock sending by logging to output console
@@ -85,10 +101,10 @@ export class EmailService {
 To: ${to}
 From: "${fromName}" <${fromAddress}>
 Subject: ${subject}
-Tracking Enabled: ${!!leadId} (Touch: ${touchPosition || 'Immediate'})
+Tracking: ${leadId ? 'enabled' : 'disabled'}
 --------------------------------------------------
-HTML Body:
-${htmlBody}
+Text:
+${textBody}
 ==================================================
       `);
       return `mock-email-id-${Date.now()}`;
@@ -99,6 +115,8 @@ ${htmlBody}
         from: `"${fromName}" <${fromAddress}>`,
         to: finalTo,
         subject: subject,
+        // Send BOTH text and minimal HTML so tracking pixel works while mimicking personal email
+        text: textBody,
         html: htmlBody,
         attachments: attachments || [],
       });
