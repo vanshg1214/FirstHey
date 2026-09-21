@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { LeadsRepository } from '@/lib/repositories/leads';
 import { FollowupDraftAgent } from '@/lib/agents/followupDraft';
+import { CompanyResearchAgent } from '@/lib/agents/companyResearch';
 import { supabaseAdmin } from '@/lib/supabase';
 import { SettingsService } from '@/lib/services/settings';
 
@@ -11,7 +12,7 @@ export async function POST(
   try {
     const { id } = await params;
     const body = await req.json();
-    const { contactFields, senderName } = body;
+    const { contactFields } = body;
 
     if (!contactFields) {
       return NextResponse.json(
@@ -53,6 +54,12 @@ export async function POST(
       throw new Error("Gemini API key missing in organization settings and environment variables.");
     }
 
+    // 5. Run Company Research if company name is available
+    let companyResearch = null;
+    if (contactFields.company) {
+      companyResearch = await CompanyResearchAgent.research(apiKey, contactFields.company);
+    }
+
     const emailDetails = {
       name: contactFields.name || null,
       company: contactFields.company || null,
@@ -63,8 +70,9 @@ export async function POST(
       apiKey,
       emailDetails,
       contextDetails,
-      senderName || 'Sales Representative',
-      exhibitionName
+      settings.email_from_name || 'Sales Representative',
+      exhibitionName,
+      companyResearch
     );
 
     return NextResponse.json({

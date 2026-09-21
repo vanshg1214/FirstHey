@@ -12,4 +12,5 @@ Rules:
 1. Extract ONLY what is legible on the card.
 2. For any field you cannot read with confidence or is not present, return null. Do NOT guess or invent values.
 3. Determine an overall confidence score from 0.0 to 1.0 based on how clear the card is and how certain you are of the extracted values.
+4. Phone Number Country Code: If a phone number is found AND it does not explicitly have a country code printed on the card (e.g. +1, +44), you MUST prepend '+91 ' to the phone number. If a country code is printed, use the printed one.
 `;

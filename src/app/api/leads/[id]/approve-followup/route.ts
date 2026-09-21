@@ -37,12 +37,20 @@ export async function POST(
         console.warn("Could not fetch org settings for email dispatch", e);
       }
 
+      if (!orgSettings.email_user || !orgSettings.email_password) {
+        return NextResponse.json(
+          { data: null, error: { code: 'EMAIL_NOT_CONFIGURED', message: 'Please configure your Email Integration in Settings to send emails.' } },
+          { status: 400 }
+        );
+      }
+
       // Send directly via Nodemailer
       const emailSent = await EmailService.sendEmail(
         { 
           user: orgSettings.email_user,
           pass: orgSettings.email_password,
-          fromName: orgSettings.email_from_name || '' 
+          fromName: orgSettings.email_from_name || '',
+          fromTitle: orgSettings.email_sender_title || ''
         },
         toEmail,
         subject,

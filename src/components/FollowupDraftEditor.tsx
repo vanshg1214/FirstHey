@@ -32,6 +32,8 @@ export default function FollowupDraftEditor({
   const [emailSent, setEmailSent] = useState(false);
   const [whatsappSent, setWhatsappSent] = useState(false);
   const [attachments, setAttachments] = useState<{ filename: string; content: string; encoding: string }[]>([]);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const { addToast } = useToast();
 
   useEffect(() => {
@@ -113,6 +115,25 @@ export default function FollowupDraftEditor({
       addToast('error', 'Send Failed', err.message || 'Could not send the email.');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handlePreview = async () => {
+    try {
+      const response = await fetch(`/api/leads/${leadId}/preview-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ emailBody: draft.emailBody }),
+      });
+      if (response.ok) {
+        const html = await response.text();
+        setPreviewHtml(html);
+        setIsPreviewOpen(true);
+      } else {
+        addToast('error', 'Preview Failed', 'Could not load preview.');
+      }
+    } catch (e) {
+      addToast('error', 'Preview Failed', 'Network error.');
     }
   };
 
@@ -219,10 +240,19 @@ export default function FollowupDraftEditor({
 
           {/* Email Body */}
           <div className="space-y-1.5">
-            <label htmlFor="body" className="text-xs font-medium text-slate-500 flex items-center gap-1.5">
-              <MailOpen className="w-3.5 h-3.5 text-slate-600" />
-              Email Message
-            </label>
+            <div className="flex justify-between items-center">
+              <label htmlFor="body" className="text-xs font-medium text-slate-500 flex items-center gap-1.5">
+                <MailOpen className="w-3.5 h-3.5 text-slate-600" />
+                Email Message
+              </label>
+              <button 
+                type="button" 
+                onClick={handlePreview}
+                className="text-xs font-semibold text-blue-600 hover:text-blue-800 transition-colors"
+              >
+                Preview Email HTML
+              </button>
+            </div>
             <textarea
               id="body"
               name="emailBody"
@@ -333,6 +363,37 @@ export default function FollowupDraftEditor({
             </button>
           </div>
         </div>
+
+      {/* Preview Modal */}
+      {isPreviewOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm transition-opacity">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-slate-50">
+              <h3 className="font-semibold text-slate-800 flex items-center gap-2">
+                <MailOpen className="w-5 h-5 text-slate-500" />
+                Email Preview
+              </h3>
+              <button onClick={() => setIsPreviewOpen(false)} className="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-200 transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-auto bg-slate-100 p-4 flex justify-center">
+              <div className="w-full max-w-[600px] shadow-sm overflow-hidden rounded-md border border-slate-200 bg-white" style={{ minHeight: '400px' }}>
+                 <iframe 
+                   srcDoc={previewHtml || ''} 
+                   className="w-full h-full min-h-[500px]" 
+                   frameBorder="0"
+                 />
+              </div>
+            </div>
+            <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-end">
+              <button onClick={() => setIsPreviewOpen(false)} className="px-5 py-2 bg-slate-200 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-300 transition-colors">
+                Close Preview
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

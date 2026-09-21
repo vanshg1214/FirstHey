@@ -43,7 +43,7 @@ export class CardOcrAgent {
       },
     };
 
-    const prompt = `Extract the contact details from this business card image and return ONLY valid JSON with these exact keys: name, company, title, email, phone, secondary_phone, website, confidence_score. Use null for any field that is not visible on the card. If there are multiple phone numbers, put the primary one in 'phone' and the second one in 'secondary_phone'. confidence_score should be a number from 0 to 100.`;
+    const prompt = `Extract the contact details from this business card image and return ONLY valid JSON with these exact keys: name, company, title, email, phone, secondary_phone, website, confidence_score. Use null for any field that is not visible on the card. If there are multiple phone numbers, put the primary one in 'phone' and the second one in 'secondary_phone'. IMPORTANT: For all phone numbers, if no country code is printed on the card, you MUST prepend '+91 '. If one is printed, use it. confidence_score should be a number from 0 to 100.`;
 
     let attempts = 0;
     const maxAttempts = 3;

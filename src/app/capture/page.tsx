@@ -686,11 +686,17 @@ function CaptureDashboardContent() {
                       <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight mb-3">
                         {mode === 'voice' ? 'Step 3: Record Conversation' : 'Step 2: Scan Meeting Notes'}
                       </h2>
-                      <p className="text-slate-500">
-                        {mode === 'voice' 
-                          ? 'Tap the microphone below and let the AI extract contact details and meeting context automatically.'
-                          : 'Upload a photo of your handwritten notes or business card scribbles.'}
-                      </p>
+                      {audioProcessing || notesProcessing ? (
+                        <p className="mt-4 font-medium text-slate-700 animate-pulse">
+                          {extractedFields?.company ? "Researching company and drafting email..." : "Generating AI draft..."}
+                        </p>
+                      ) : (
+                        <p className="text-slate-500">
+                          {mode === 'voice' 
+                            ? 'Tap the microphone below and let the AI extract contact details and meeting context automatically.'
+                            : 'Upload a photo of your handwritten notes or business card scribbles.'}
+                        </p>
+                      )}
                     </div>
                     <div className="w-full max-w-sm mx-auto">
                       {mode === 'voice' && <RecordButton onRecordingComplete={handleRecordingComplete} isProcessing={audioProcessing} />}

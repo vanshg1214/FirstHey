@@ -42,6 +42,7 @@ export async function saveOrganizationSettings(settings: OrganizationSettings): 
       email_user: settings.email_user,
       email_password: settings.email_password,
       email_from_name: settings.email_from_name,
+      email_sender_title: settings.email_sender_title,
       zoho_client_id: settings.zoho_client_id,
       zoho_client_secret: settings.zoho_client_secret,
       zoho_refresh_token: settings.zoho_refresh_token,

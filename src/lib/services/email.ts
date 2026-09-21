@@ -42,7 +42,7 @@ export class EmailService {
    * Gmail will proxy the pixel image through its own servers, masking the external domain.
    */
   public static async sendEmail(
-    credentials: { user?: string; pass?: string; fromName?: string },
+    credentials: { user?: string; pass?: string; fromName?: string; fromTitle?: string },
     to: string, 
     subject: string, 
     body: string, 
@@ -74,13 +74,6 @@ export class EmailService {
     // By sending ONLY plain text, we avoid all HTML-based spam filters.
     const textBody = `${body}\n\n${fromName}`;
 
-    // HTML version — minimal, no styling, looks like a personal reply.
-    const safeBody = body
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/\n/g, '<br>');
-
     // Build tracking pixel URL (only appended to HTML part)
     let pixelTag = '';
     if (leadId) {
@@ -91,7 +84,50 @@ export class EmailService {
       }
     }
 
-    const htmlBody = `
+    const htmlBody = this.generateHtml(body, fromName, credentials.fromTitle || 'Export Marketing Strategist', pixelTag);
+
+    if (!transporter) {
+      // Mock sending by logging to output console
+      console.log(`
+==================================================
+[MOCK EMAIL DISPATCH]
+To: ${to}
+From: "${fromName}" <${fromAddress}>
+Subject: ${subject}
+Tracking: ${leadId ? 'enabled' : 'disabled'}
+--------------------------------------------------
+Text:
+${textBody}
+==================================================
+      `);
+      return `mock-email-id-${Date.now()}`;
+    }
+
+    try {
+      const info = await transporter.sendMail({
+        from: `"${fromName}" <${fromAddress}>`,
+        to: finalTo,
+        subject: subject,
+        // Send BOTH text and minimal HTML so tracking pixel works while mimicking personal email
+        text: textBody,
+        html: htmlBody,
+        attachments: attachments || [],
+      });
+
+      return info.messageId || 'nodemailer-success-id';
+    } catch (error: any) {
+      throw new Error(`Nodemailer API error: ${error.message || error}`);
+    }
+  }
+
+  public static generateHtml(body: string, fromName: string, fromTitle: string, pixelTag: string = ''): string {
+    const safeBody = body
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/\n/g, '<br>');
+
+    return `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -129,7 +165,7 @@ export class EmailService {
     <div class="border-divider" style="padding-top: 30px; border-top: 1px solid #eaeaea; margin-bottom: 25px;">
       <div style="border-left: 3px solid #d32e2d; padding-left: 15px;">
         <div class="text-primary" style="font-size: 15px; font-weight: bold; color: #1a202c; letter-spacing: 0.5px;">${fromName || 'Nitin Gupta'}</div>
-        <div class="text-secondary" style="font-size: 11px; color: #718096; text-transform: uppercase; letter-spacing: 1px; margin-top: 3px; font-weight: 600;">Export Marketing Strategist</div>
+        <div class="text-secondary" style="font-size: 11px; color: #718096; text-transform: uppercase; letter-spacing: 1px; margin-top: 3px; font-weight: 600;">${fromTitle || 'Export Marketing Strategist'}</div>
       </div>
     </div>
     
@@ -138,38 +174,5 @@ export class EmailService {
 </body>
 </html>
     `;
-
-    if (!transporter) {
-      // Mock sending by logging to output console
-      console.log(`
-==================================================
-[MOCK EMAIL DISPATCH]
-To: ${to}
-From: "${fromName}" <${fromAddress}>
-Subject: ${subject}
-Tracking: ${leadId ? 'enabled' : 'disabled'}
---------------------------------------------------
-Text:
-${textBody}
-==================================================
-      `);
-      return `mock-email-id-${Date.now()}`;
-    }
-
-    try {
-      const info = await transporter.sendMail({
-        from: `"${fromName}" <${fromAddress}>`,
-        to: finalTo,
-        subject: subject,
-        // Send BOTH text and minimal HTML so tracking pixel works while mimicking personal email
-        text: textBody,
-        html: htmlBody,
-        attachments: attachments || [],
-      });
-
-      return info.messageId || 'nodemailer-success-id';
-    } catch (error: any) {
-      throw new Error(`Nodemailer API error: ${error.message || error}`);
-    }
   }
 }

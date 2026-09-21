@@ -6,6 +6,7 @@ export interface OrganizationSettings {
   email_user?: string;
   email_password?: string;
   email_from_name?: string;
+  email_sender_title?: string;
   zoho_client_id?: string;
   zoho_client_secret?: string;
   zoho_refresh_token?: string;

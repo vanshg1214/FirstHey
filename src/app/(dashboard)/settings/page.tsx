@@ -242,6 +242,19 @@ export default function SettingsPage() {
                 </div>
               </div>
               <div>
+                <label className="block text-sm font-medium text-slate-700">Sender Title / Designation</label>
+                <div className="mt-1">
+                  <input
+                    type="text"
+                    name="email_sender_title"
+                    value={settings.email_sender_title || ''}
+                    onChange={handleChange}
+                    className="block w-full rounded-md border border-slate-300 bg-white px-4 py-2 text-slate-900 focus:border-blue-500 focus:ring-blue-500 sm:text-sm shadow-sm"
+                    placeholder="Export Marketing Strategist"
+                  />
+                </div>
+              </div>
+              <div>
                 <label className="block text-sm font-medium text-slate-700">Email Address (User)</label>
                 <div className="mt-1">
                   <input
