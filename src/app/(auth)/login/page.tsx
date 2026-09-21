@@ -13,8 +13,6 @@ export default function LoginPage() {
   const [companyName, setCompanyName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
-  const [otpCode, setOtpCode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   
@@ -59,9 +57,8 @@ export default function LoginPage() {
         if (data.session) {
           router.push('/leads');
         } else {
-          // Trigger OTP verification flow
-          setIsVerifyingOtp(true);
-          setSuccessMsg('Account created! Please check your email for the 6-digit verification code.');
+          // Trigger confirmation link message
+          setSuccessMsg('Account created! Please check your email and click the confirmation link to sign in.');
         }
       } else {
         // Sign In Flow
@@ -83,109 +80,7 @@ export default function LoginPage() {
     }
   };
 
-  const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      const { data, error: verifyError } = await supabase.auth.verifyOtp({
-        email,
-        token: otpCode,
-        type: 'signup'
-      });
 
-      if (verifyError) throw new Error(verifyError.message);
-      
-      if (data.session) {
-        router.push('/leads');
-      }
-    } catch (err: any) {
-      setError(err.message || 'Invalid verification code.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  if (isVerifyingOtp) {
-    return (
-      <div className="min-h-screen bg-[#f8fafc] text-slate-900 flex items-center justify-center p-4 font-sans relative overflow-hidden">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-600/5 rounded-full blur-[120px] pointer-events-none"></div>
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-teal-600/5 rounded-full blur-[100px] pointer-events-none"></div>
-
-        <div className="w-full max-w-md space-y-6 relative z-10">
-          <div className="text-center space-y-4 mb-8">
-            <div className="w-48 h-12 flex items-center justify-center mx-auto translate-x-2">
-              <img src="/logo.png?v=2" alt="FirstHey Logo" className="w-full h-full object-contain" />
-            </div>
-            <h2 className="text-2xl font-black text-slate-900 tracking-tight">Verify Your Email</h2>
-            <p className="text-xs text-slate-500 max-w-xs mx-auto">
-              We sent a 6-digit code to <span className="font-bold">{email}</span>. Please enter it below.
-            </p>
-          </div>
-
-          <div className="bg-white/60 backdrop-blur-xl border border-white/40 shadow-xl rounded-3xl p-8">
-            {error && (
-              <div className="mb-6 p-4 bg-rose-50 border border-rose-100 rounded-2xl flex items-start gap-3">
-                <AlertCircle className="w-5 h-5 text-rose-500 shrink-0 mt-0.5" />
-                <p className="text-xs font-medium text-rose-700 leading-relaxed">{error}</p>
-              </div>
-            )}
-            
-            {successMsg && (
-              <div className="mb-6 p-4 bg-teal-50 border border-teal-100 rounded-2xl flex items-start gap-3">
-                <p className="text-xs font-medium text-teal-700 leading-relaxed">{successMsg}</p>
-              </div>
-            )}
-
-            <form onSubmit={handleVerifyOtp} className="space-y-4">
-              <div className="space-y-1.5">
-                <label htmlFor="otp" className="text-xs font-medium text-slate-600 flex items-center gap-1.5">
-                  <Lock className="w-3.5 h-3.5 text-slate-800" />
-                  6-Digit Verification Code
-                </label>
-                <input
-                  type="text"
-                  id="otp"
-                  value={otpCode}
-                  onChange={(e) => setOtpCode(e.target.value)}
-                  placeholder="123456"
-                  maxLength={6}
-                  required
-                  className="w-full bg-slate-50 border border-slate-200 focus:bg-white focus:border-indigo-400 focus:ring-2 focus:ring-slate-200 rounded-2xl px-4 py-3 text-center text-xl tracking-[0.5em] font-mono text-slate-900 placeholder-slate-400 transition-all outline-none"
-                />
-              </div>
-
-              <div className="pt-2">
-                <button
-                  type="submit"
-                  disabled={isLoading || otpCode.length < 6}
-                  className="w-full bg-slate-900 hover:bg-slate-800 text-white font-semibold py-3.5 px-4 rounded-2xl transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 group"
-                >
-                  {isLoading ? (
-                    <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
-                  ) : (
-                    <>
-                      Verify & Login
-                      <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                    </>
-                  )}
-                </button>
-              </div>
-              
-              <button
-                type="button"
-                onClick={() => setIsVerifyingOtp(false)}
-                className="w-full text-center text-xs text-slate-500 hover:text-slate-700 font-medium mt-4"
-              >
-                &larr; Back
-              </button>
-            </form>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-[#f8fafc] text-slate-900 flex items-center justify-center p-4 font-sans relative overflow-hidden">
