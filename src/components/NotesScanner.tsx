@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
-import { FileText, RefreshCw, AlertCircle, Sparkles, Loader2, Image as ImageIcon, X, Plus, Check } from 'lucide-react';
+import { FileText, RefreshCw, AlertCircle, Sparkles, Loader2, Image as ImageIcon, X, Plus, Check, Keyboard, Edit3 } from 'lucide-react';
 
 interface NotesScannerProps {
   onScanComplete: (data: {
@@ -18,6 +18,8 @@ interface NotesScannerProps {
 export default function NotesScanner({ onScanComplete, isProcessing: externalProcessing = false, leadId }: NotesScannerProps) {
   const [images, setImages] = useState<string[]>([]);
   const [isScanning, setIsScanning] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
+  const [typedNotes, setTypedNotes] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [showMenu, setShowMenu] = useState(false);
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -127,8 +129,24 @@ export default function NotesScanner({ onScanComplete, isProcessing: externalPro
 
   const resetScanner = () => {
     setImages([]);
+    setTypedNotes('');
+    setIsTyping(false);
     setError(null);
     setIsScanning(false);
+  };
+
+  const handleSaveTypedNotes = () => {
+    if (!typedNotes.trim()) {
+      setError('Please type some notes before saving.');
+      return;
+    }
+    onScanComplete({
+      problem: typedNotes.trim(),
+      needs: '',
+      action_items: [],
+      sentiment: 'neutral',
+      notable_quotes: [],
+    });
   };
 
   const isBusy = isScanning || externalProcessing;
@@ -160,7 +178,7 @@ export default function NotesScanner({ onScanComplete, isProcessing: externalPro
         className="hidden"
       />
 
-      {images.length === 0 ? (
+      {images.length === 0 && !isTyping ? (
         <button
           onClick={() => setShowMenu(true)}
           className="relative flex flex-col items-center justify-center w-full py-8 px-4 h-[184px] rounded-3xl bg-slate-50 border-2 border-slate-200 hover:border-zinc-700 hover:bg-slate-100/80 transition-all duration-300 group overflow-hidden"
@@ -171,13 +189,38 @@ export default function NotesScanner({ onScanComplete, isProcessing: externalPro
           
           <div className="flex flex-col items-center">
             <span className="text-lg font-bold tracking-wide text-indigo-100 group-hover:text-slate-900">
-              SCAN NOTES
+              ADD NOTES
             </span>
             <span className="text-sm text-slate-400 font-medium mt-1">
-              Tap to take photo or upload
+              Upload photo or type manually
             </span>
           </div>
         </button>
+      ) : isTyping ? (
+        <div className="w-full rounded-3xl overflow-hidden border border-slate-200 bg-white/90 p-4 shadow-2xl relative group">
+          <textarea
+            value={typedNotes}
+            onChange={(e) => setTypedNotes(e.target.value)}
+            placeholder="Type your meeting notes here..."
+            className="w-full h-32 p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-700 placeholder-slate-400 resize-none outline-none font-medium mb-4"
+          ></textarea>
+          <div className="flex gap-2">
+            <button
+              onClick={resetScanner}
+              className="py-3 px-4 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-sm font-medium text-slate-500 transition-colors flex items-center justify-center"
+              title="Cancel"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <button
+              onClick={handleSaveTypedNotes}
+              className="flex-1 py-3 bg-blue-600 hover:bg-slate-800 rounded-xl text-sm font-bold text-white hover:text-white transition-colors flex items-center justify-center gap-2 shadow-sm"
+            >
+              <Check className="w-4 h-4" />
+              Save Notes
+            </button>
+          </div>
+        </div>
       ) : (
         <div className="w-full rounded-3xl overflow-hidden border border-slate-200 bg-white/90 p-4 shadow-2xl relative group">
           
@@ -307,6 +350,27 @@ export default function NotesScanner({ onScanComplete, isProcessing: externalPro
                   </div>
                   <div className="text-xs text-slate-400 mt-0.5">
                     Choose an existing photo or file
+                  </div>
+                </div>
+              </button>
+
+              {/* Option 3: Type Manually */}
+              <button
+                onClick={() => {
+                  setShowMenu(false);
+                  setIsTyping(true);
+                }}
+                className="w-full flex items-center gap-4 p-4 rounded-2xl bg-white/60 border border-slate-200 hover:border-zinc-700 hover:bg-slate-50 transition-all duration-200 group text-left"
+              >
+                <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-600 group-hover:scale-105 transition-transform">
+                  <Edit3 className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="text-sm font-bold text-slate-900 group-hover:text-slate-900">
+                    Type Notes
+                  </div>
+                  <div className="text-xs text-slate-400 mt-0.5">
+                    Write down notes manually
                   </div>
                 </div>
               </button>
