@@ -71,8 +71,8 @@ export default function ExhibitionsDashboard() {
       <nav className="border-b border-slate-200 bg-white/60 backdrop-blur-xl sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 md:px-8 py-4 flex items-center justify-between">
           <Link href="/leads" className="flex items-center">
-            <div className="w-36 h-7 flex items-center justify-start">
-              <img src="/logo.png?v=2" alt="FirstHey Logo" className="w-full h-full object-contain object-left" />
+            <div className="flex items-center justify-start">
+              <span className="text-xl font-black text-slate-900 tracking-tight">FirstHey</span>
             </div>
           </Link>
 
@@ -99,11 +99,11 @@ export default function ExhibitionsDashboard() {
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 md:px-8 py-8 space-y-8 z-10">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900 tracking-tight flex items-center gap-3">
-              <Calendar className="w-7 h-7 text-blue-600" />
+            <h1 className="text-xl md:text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-blue-600" />
               Exhibitions & Events
             </h1>
-            <p className="text-sm text-slate-500 mt-2">Manage your events and group captured leads by exhibition.</p>
+            <p className="text-sm text-slate-500 mt-1">Manage your events and group captured leads by exhibition.</p>
           </div>
           
           <div className="relative w-full md:w-64">
@@ -133,22 +133,22 @@ export default function ExhibitionsDashboard() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filtered.map(ex => (
               <Link key={ex.id} href={`/exhibitions/${ex.id}`}>
-                <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-md hover:border-blue-300 transition-all cursor-pointer group flex flex-col h-full">
-                  <div className="flex justify-between items-start mb-4">
-                    <h3 className="font-bold text-lg text-slate-900 group-hover:text-blue-700 transition-colors">{ex.name}</h3>
-                    <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-blue-500 transition-transform group-hover:translate-x-1" />
+                <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-md hover:border-blue-300 transition-all cursor-pointer group flex flex-col h-full">
+                  <div className="flex justify-between items-start mb-3">
+                    <h3 className="font-bold text-base text-slate-900 group-hover:text-blue-700 transition-colors">{ex.name}</h3>
+                    <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-blue-500 transition-transform group-hover:translate-x-1" />
                   </div>
                   
-                  <div className="space-y-2 mt-auto">
+                  <div className="space-y-1.5 mt-auto">
                     {ex.location && (
-                      <div className="flex items-center gap-2 text-sm text-slate-500">
-                        <MapPin className="w-4 h-4 text-slate-400" />
+                      <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                        <MapPin className="w-3.5 h-3.5 text-slate-400" />
                         <span>{ex.location}</span>
                       </div>
                     )}
                     {(ex.start_date || ex.end_date) && (
-                      <div className="flex items-center gap-2 text-sm text-slate-500">
-                        <Calendar className="w-4 h-4 text-slate-400" />
+                      <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                        <Calendar className="w-3.5 h-3.5 text-slate-400" />
                         <span>
                           {ex.start_date ? new Date(ex.start_date).toLocaleDateString() : '?'} - {ex.end_date ? new Date(ex.end_date).toLocaleDateString() : '?'}
                         </span>
@@ -156,12 +156,12 @@ export default function ExhibitionsDashboard() {
                     )}
                   </div>
                   
-                  <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
+                  <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center">
-                        <Users className="w-4 h-4" />
+                      <div className="w-7 h-7 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center">
+                        <Users className="w-3.5 h-3.5" />
                       </div>
-                      <span className="text-sm font-bold text-slate-700">{ex.lead_count || 0} Leads</span>
+                      <span className="text-xs font-bold text-slate-700">{ex.lead_count || 0} Leads</span>
                     </div>
                   </div>
                 </div>
@@ -175,32 +175,32 @@ export default function ExhibitionsDashboard() {
       {isModalOpen && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div className="p-6 border-b border-slate-100">
-              <h2 className="text-xl font-bold text-slate-900">Create Exhibition</h2>
+            <div className="p-5 border-b border-slate-100">
+              <h2 className="text-lg font-bold text-slate-900">Create Exhibition</h2>
             </div>
-            <form onSubmit={handleCreate} className="p-6 space-y-4">
+            <form onSubmit={handleCreate} className="p-5 space-y-3">
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Exhibition Name *</label>
-                <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 outline-none focus:border-blue-500 focus:bg-white transition-all" placeholder="e.g. CES 2026" />
+                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Exhibition Name *</label>
+                <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500 focus:bg-white transition-all text-sm" placeholder="e.g. CES 2026" />
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Location *</label>
-                <input required type="text" value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 outline-none focus:border-blue-500 focus:bg-white transition-all" placeholder="e.g. Las Vegas Convention Center" />
+                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Location *</label>
+                <input required type="text" value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500 focus:bg-white transition-all text-sm" placeholder="e.g. Las Vegas Convention Center" />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Start Date *</label>
-                  <input required type="date" value={formData.start_date} onChange={e => setFormData({...formData, start_date: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 outline-none focus:border-blue-500 focus:bg-white transition-all text-sm" />
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Start Date *</label>
+                  <input required type="date" value={formData.start_date} onChange={e => setFormData({...formData, start_date: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500 focus:bg-white transition-all text-sm" />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">End Date *</label>
-                  <input required type="date" value={formData.end_date} onChange={e => setFormData({...formData, end_date: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 outline-none focus:border-blue-500 focus:bg-white transition-all text-sm" />
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">End Date *</label>
+                  <input required type="date" value={formData.end_date} onChange={e => setFormData({...formData, end_date: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500 focus:bg-white transition-all text-sm" />
                 </div>
               </div>
               
-              <div className="pt-4 flex gap-3">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors">Cancel</button>
-                <button type="submit" className="flex-1 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl transition-colors shadow-lg">Create</button>
+              <div className="pt-3 flex gap-2">
+                <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg transition-colors text-sm">Cancel</button>
+                <button type="submit" className="flex-1 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-lg transition-colors shadow-md text-sm">Create</button>
               </div>
             </form>
           </div>

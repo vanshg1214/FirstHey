@@ -378,8 +378,8 @@ export default function LeadsDashboard() {
       <nav className="border-b border-slate-200 bg-white/60 backdrop-blur-xl sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 md:px-8 py-4 flex items-center justify-between">
           <div className="flex items-center">
-            <div className="w-36 h-7 flex items-center justify-start">
-              <img src="/logo.png?v=2" alt="FirstHey Logo" className="w-full h-full object-contain object-left" />
+            <div className="flex items-center justify-start">
+              <span className="text-xl font-black text-slate-900 tracking-tight">FirstHey</span>
             </div>
           </div>
 
@@ -422,11 +422,11 @@ export default function LeadsDashboard() {
         {/* Header Section */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900 tracking-tight flex items-center gap-3">
-              <LayoutDashboard className="w-7 h-7 text-slate-800" />
+            <h1 className="text-xl md:text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+              <LayoutDashboard className="w-5 h-5 text-slate-800" />
               Exhibitions Overview
             </h1>
-            <p className="text-sm text-slate-500 mt-2">Monitor all lead processing, extraction status, and automated CRM syncs.</p>
+            <p className="text-sm text-slate-500 mt-1">Monitor all lead processing, extraction status, and automated CRM syncs.</p>
           </div>
           
           {/* Status Tabs */}
@@ -453,41 +453,41 @@ export default function LeadsDashboard() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.1 }}
-          className="grid grid-cols-3 gap-2 md:gap-6"
+          className="grid grid-cols-3 gap-3 md:gap-4"
         >
-          <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-4 md:p-6 flex flex-col md:flex-row items-center gap-3 md:gap-5 group hover:shadow-md hover:border-blue-200 transition-all cursor-default">
-            <div className="w-12 h-12 md:w-14 md:h-14 rounded-xl bg-blue-600 text-white flex items-center justify-center flex-shrink-0 shadow-sm group-hover:scale-105 transition-transform">
-              <Users className="w-6 h-6" />
+          <div className="bg-white border border-slate-200 shadow-sm rounded-xl p-3 md:p-4 flex flex-col md:flex-row items-center gap-3 group hover:shadow-md hover:border-blue-200 transition-all cursor-default">
+            <div className="w-10 h-10 rounded-lg bg-blue-600 text-white flex items-center justify-center flex-shrink-0 shadow-sm group-hover:scale-105 transition-transform">
+              <Users className="w-5 h-5" />
             </div>
-            <div className="space-y-1 text-center md:text-left">
-              <span className="text-[10px] md:text-xs text-slate-500 font-bold uppercase tracking-wider block">
+            <div className="space-y-0.5 text-center md:text-left">
+              <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">
                 Total Leads
               </span>
-              <div className="text-2xl md:text-3xl font-black text-slate-900 leading-none">{isLoading ? <span className="animate-pulse text-slate-300">...</span> : animTotalLeads}</div>
+              <div className="text-xl md:text-2xl font-black text-slate-900 leading-none">{isLoading ? <span className="animate-pulse text-slate-300">...</span> : animTotalLeads}</div>
             </div>
           </div>
 
-          <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-4 md:p-6 flex flex-col md:flex-row items-center gap-3 md:gap-5 group hover:shadow-md hover:border-teal-200 transition-all cursor-default">
-            <div className="w-12 h-12 md:w-14 md:h-14 rounded-xl bg-teal-500 text-white flex items-center justify-center flex-shrink-0 shadow-sm group-hover:scale-105 transition-transform">
-              <CheckCircle className="w-6 h-6" />
+          <div className="bg-white border border-slate-200 shadow-sm rounded-xl p-3 md:p-4 flex flex-col md:flex-row items-center gap-3 group hover:shadow-md hover:border-teal-200 transition-all cursor-default">
+            <div className="w-10 h-10 rounded-lg bg-teal-500 text-white flex items-center justify-center flex-shrink-0 shadow-sm group-hover:scale-105 transition-transform">
+              <CheckCircle className="w-5 h-5" />
             </div>
-            <div className="space-y-1 text-center md:text-left">
-              <span className="text-[10px] md:text-xs text-slate-500 font-bold uppercase tracking-wider block">
+            <div className="space-y-0.5 text-center md:text-left">
+              <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">
                 Synced CRM
               </span>
-              <div className="text-2xl md:text-3xl font-black text-slate-900 leading-none">{isLoading ? <span className="animate-pulse text-slate-300">...</span> : animSyncedCount}</div>
+              <div className="text-xl md:text-2xl font-black text-slate-900 leading-none">{isLoading ? <span className="animate-pulse text-slate-300">...</span> : animSyncedCount}</div>
             </div>
           </div>
 
-          <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-4 md:p-6 flex flex-col md:flex-row items-center gap-3 md:gap-5 group hover:shadow-md hover:border-rose-200 transition-all cursor-default">
-            <div className="w-12 h-12 md:w-14 md:h-14 rounded-xl bg-rose-500 text-white flex items-center justify-center flex-shrink-0 shadow-sm group-hover:scale-105 transition-transform">
-              <AlertTriangle className="w-6 h-6" />
+          <div className="bg-white border border-slate-200 shadow-sm rounded-xl p-3 md:p-4 flex flex-col md:flex-row items-center gap-3 group hover:shadow-md hover:border-rose-200 transition-all cursor-default">
+            <div className="w-10 h-10 rounded-lg bg-rose-500 text-white flex items-center justify-center flex-shrink-0 shadow-sm group-hover:scale-105 transition-transform">
+              <AlertTriangle className="w-5 h-5" />
             </div>
-            <div className="space-y-1 text-center md:text-left">
-              <span className="text-[10px] md:text-xs text-slate-500 font-bold uppercase tracking-wider block">
+            <div className="space-y-0.5 text-center md:text-left">
+              <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">
                 Alerts
               </span>
-              <div className="text-2xl md:text-3xl font-black text-slate-900 leading-none">{isLoading ? <span className="animate-pulse text-slate-300">...</span> : animAlertCount}</div>
+              <div className="text-xl md:text-2xl font-black text-slate-900 leading-none">{isLoading ? <span className="animate-pulse text-slate-300">...</span> : animAlertCount}</div>
             </div>
           </div>
         </motion.div>
@@ -509,32 +509,32 @@ export default function LeadsDashboard() {
           {/* Main Leads List Area (3/4 Width) */}
           <div className="lg:col-span-3 space-y-6">
             {/* Search + Export */}
-            <div className="flex gap-3 items-center">
-              <div className="relative flex-1 bg-white border border-slate-200 shadow-sm rounded-xl rounded-2xl border-slate-200 group focus-within:border-blue-500/50 transition-colors">
-                <Search className="w-5 h-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2 group-focus-within:text-slate-600 transition-colors" />
+            <div className="flex gap-2 items-center">
+              <div className="relative flex-1 bg-white border border-slate-200 shadow-sm rounded-xl group focus-within:border-blue-500/50 transition-colors">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 group-focus-within:text-slate-600 transition-colors" />
                 <input
                   type="text"
                   placeholder="Search leads by name, company, or email..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-transparent border-none rounded-2xl pl-12 pr-6 py-4 text-sm text-slate-900 placeholder-zinc-600 focus:ring-0 outline-none"
+                  className="w-full bg-transparent border-none rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-900 placeholder-zinc-600 focus:ring-0 outline-none"
                 />
               </div>
                 <button
                   onClick={exportToCSV}
                   disabled={filteredLeads.length === 0}
                   title="Export to CSV"
-                  className="p-3.5 rounded-2xl bg-white border border-slate-200 shadow-sm rounded-xl border border-slate-200 hover:border-teal-500/30 text-slate-500 hover:text-teal-400 transition-all disabled:opacity-40"
+                  className="p-2.5 rounded-xl bg-white border border-slate-200 shadow-sm hover:border-teal-500/30 text-slate-500 hover:text-teal-500 transition-all disabled:opacity-40"
                 >
-                  <Download className="w-5 h-5" />
+                  <Download className="w-4 h-4" />
                 </button>
                 {selectedIds.length > 0 && (
                   <button
                     onClick={handleBulkDelete}
                     disabled={isDeleting}
-                    className="flex items-center gap-2 px-4 py-3.5 rounded-2xl bg-red-50 border border-red-200 text-red-600 font-bold text-sm shadow-sm hover:bg-red-100 transition-all disabled:opacity-50"
+                    className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-red-50 border border-red-200 text-red-600 font-bold text-xs shadow-sm hover:bg-red-100 transition-all disabled:opacity-50"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="w-3.5 h-3.5" />
                     <span className="hidden sm:inline">Delete ({selectedIds.length})</span>
                   </button>
                 )}
@@ -567,12 +567,12 @@ export default function LeadsDashboard() {
           <div className="lg:col-span-1 space-y-6">
             
             {/* Sentiment Breakdown */}
-            <div className="bg-white border border-slate-200 shadow-sm rounded-xl p-6 rounded-3xl border border-slate-200 space-y-4">
-              <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-slate-600" />
+            <div className="bg-white border border-slate-200 shadow-sm rounded-xl p-4 space-y-4">
+              <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-slate-600" />
                 Sentiment Breakdown
               </h4>
-              <div className="space-y-3.5">
+              <div className="space-y-3">
                 {[
                   { name: 'Positive', key: 'positive', color: 'bg-emerald-500', barColor: 'bg-emerald-500/20' },
                   { name: 'Neutral', key: 'neutral', color: 'bg-blue-500', barColor: 'bg-blue-500/20' },
@@ -583,7 +583,7 @@ export default function LeadsDashboard() {
                   const percent = totalLeads > 0 ? Math.round((count / totalLeads) * 100) : 0;
                   return (
                     <div key={s.key} className="space-y-1">
-                      <div className="flex justify-between text-xs">
+                      <div className="flex justify-between text-[11px]">
                         <span className="text-slate-500 font-medium">{s.name}</span>
                         <span className="text-slate-400 font-mono">{count} ({percent}%)</span>
                       </div>
@@ -597,19 +597,19 @@ export default function LeadsDashboard() {
             </div>
 
             {/* Live Activity Log */}
-            <div className="bg-white border border-slate-200 shadow-sm rounded-xl p-6 rounded-3xl border border-slate-200 space-y-4">
-              <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                <Clock className="w-4 h-4 text-slate-600" />
+            <div className="bg-white border border-slate-200 shadow-sm rounded-xl p-4 space-y-4">
+              <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-slate-600" />
                 Live Activity Log
               </h4>
               <div className="space-y-4 max-h-[380px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-zinc-800">
                 {activities.length === 0 ? (
-                  <p className="text-xs text-zinc-600 text-center italic select-none py-8">
+                  <p className="text-[11px] text-zinc-600 text-center italic select-none py-6">
                     No recent activities recorded.
                   </p>
                 ) : (
                   activities.map((act) => (
-                    <div key={act.id} className="relative pl-4 border-l border-slate-200 text-[11px] space-y-0.5">
+                    <div key={act.id} className="relative pl-3 border-l border-slate-200 text-[10px] space-y-0.5">
                       {/* Event dot */}
                       <span className={`absolute -left-[4.5px] top-1 w-2 h-2 rounded-full ${
                         act.type === 'capture' ? 'bg-slate-800' :
@@ -623,7 +623,7 @@ export default function LeadsDashboard() {
                           {new Date(act.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </span>
                       </div>
-                      <p className="text-[10px] text-slate-400">{act.details} @ {act.company}</p>
+                      <p className="text-[9px] text-slate-400">{act.details} @ {act.company}</p>
                     </div>
                   ))
                 )}

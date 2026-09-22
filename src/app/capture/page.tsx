@@ -571,7 +571,7 @@ function CaptureDashboardContent() {
           Back to Dashboard
         </Link>
         
-        <div className="flex items-center justify-between w-full md:w-auto gap-1 bg-white/80 backdrop-blur-md border border-slate-200 p-1.5 rounded-2xl shadow-sm">
+        <div className="flex items-center justify-between w-full md:w-auto gap-1 bg-white/80 backdrop-blur-md border border-slate-200 p-1 rounded-xl shadow-sm">
           {[
             { id: 'card_choice', label: '1. Card', shortLabel: 'Card', icon: '💳', match: ['card_choice', 'card', 'bulk'] },
             { id: 'notes', label: '2. Notes', shortLabel: 'Notes', icon: '📝', match: ['notes'] },
@@ -583,15 +583,15 @@ function CaptureDashboardContent() {
               <button
                 key={step.id}
                 onClick={() => setMode(step.id as any)}
-                className={`flex flex-col sm:flex-row items-center justify-center flex-1 sm:flex-none px-2 sm:px-4 py-2 sm:py-2 rounded-xl transition-all duration-300 gap-1 sm:gap-2 ${
+                className={`flex flex-col sm:flex-row items-center justify-center flex-1 sm:flex-none px-2 sm:px-3 py-1.5 rounded-lg transition-all duration-300 gap-1 sm:gap-1.5 ${
                   isActive 
                     ? 'bg-blue-600 text-white shadow-md transform sm:scale-[1.02]' 
                     : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
                 }`}
               >
-                <span className="text-lg sm:text-base leading-none">{step.icon}</span>
-                <span className="text-[10px] sm:text-xs font-bold leading-none hidden sm:inline">{step.label}</span>
-                <span className="text-[10px] sm:text-xs font-bold leading-none sm:hidden">{step.shortLabel}</span>
+                <span className="text-base sm:text-sm leading-none">{step.icon}</span>
+                <span className="text-[9px] sm:text-[10px] font-bold leading-none hidden sm:inline">{step.label}</span>
+                <span className="text-[9px] sm:text-[10px] font-bold leading-none sm:hidden">{step.shortLabel}</span>
               </button>
             );
           })}
@@ -604,13 +604,13 @@ function CaptureDashboardContent() {
       </header>
 
       {/* Exhibition Selector */}
-      <div className="w-full max-w-6xl mx-auto mb-6 flex justify-center md:justify-end z-10 relative">
-        <div className="bg-white border border-slate-200 rounded-xl p-2 shadow-sm flex items-center gap-3">
-          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider pl-2">Active Event:</span>
+      <div className="w-full max-w-6xl mx-auto mb-4 flex justify-center md:justify-end z-10 relative">
+        <div className="bg-white border border-slate-200 rounded-lg p-1.5 shadow-sm flex items-center gap-2">
+          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider pl-2">Active Event:</span>
           <select
             value={exhibitionId}
             onChange={(e) => setExhibitionId(e.target.value)}
-            className="bg-slate-50 border border-slate-200 text-slate-700 text-sm font-bold rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2 outline-none min-w-[250px] cursor-pointer hover:border-blue-300 transition-colors"
+            className="bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold rounded-md focus:ring-blue-500 focus:border-blue-500 block p-1.5 outline-none min-w-[200px] cursor-pointer hover:border-blue-300 transition-colors"
           >
             <option value="">-- Select Exhibition (Optional) --</option>
             {exhibitionsList.map(ex => (
@@ -651,27 +651,27 @@ function CaptureDashboardContent() {
             {(mode !== 'review' && mode !== 'bulk') && (
               <div className="w-full max-w-xl animate-in fade-in zoom-in-95 duration-500">
                 {mode === 'card_choice' && (
-                  <div className="bg-white border border-slate-200 shadow-xl rounded-3xl p-8 md:p-12 text-center space-y-8 flex flex-col items-center">
-                    <div className="w-20 h-20 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 mb-2 shadow-inner">
-                      <Sparkles className="w-10 h-10" />
+                  <div className="bg-white border border-slate-200 shadow-xl rounded-3xl p-6 md:p-10 text-center space-y-6 flex flex-col items-center">
+                    <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 mb-2 shadow-inner">
+                      <Sparkles className="w-8 h-8" />
                     </div>
                     <div>
-                      <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight mb-3">
+                      <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight mb-2">
                         Step 1: Capture Contact Info
                       </h2>
-                      <p className="text-slate-500">
+                      <p className="text-sm text-slate-500">
                         Scan a business card to instantly extract the contact details.
                       </p>
                     </div>
-                    <div className="w-full max-w-sm mx-auto flex flex-col gap-4">
-                      <button onClick={() => setMode('card')} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg transition-all">
+                    <div className="w-full max-w-sm mx-auto flex flex-col gap-3">
+                      <button onClick={() => setMode('card')} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 text-sm rounded-xl shadow-lg transition-all">
                         Scan Single Card
                       </button>
-                      <button onClick={() => setMode('bulk')} className="w-full bg-slate-100 hover:bg-slate-200 text-slate-900 font-bold py-4 rounded-xl border border-slate-200 transition-all">
+                      <button onClick={() => setMode('bulk')} className="w-full bg-slate-100 hover:bg-slate-200 text-slate-900 font-bold py-3 text-sm rounded-xl border border-slate-200 transition-all">
                         Bulk Scan Multiple Cards
                       </button>
                     </div>
-                    <button onClick={() => setMode('notes')} className="text-sm font-bold text-slate-400 hover:text-slate-600 mt-4 underline decoration-slate-300 underline-offset-4 transition-colors">
+                    <button onClick={() => setMode('notes')} className="text-[11px] font-bold text-slate-400 hover:text-slate-600 mt-2 underline decoration-slate-300 underline-offset-4 transition-colors">
                       Skip for now, add notes later &rarr;
                     </button>
                   </div>

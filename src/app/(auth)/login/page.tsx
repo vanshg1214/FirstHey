@@ -90,9 +90,9 @@ export default function LoginPage() {
 
       <div className="w-full max-w-md space-y-6 relative z-10">
         {/* Logo Header */}
-        <div className="text-center space-y-4 mb-8">
-          <div className="w-48 h-12 flex items-center justify-center mx-auto translate-x-2">
-            <img src="/logo.png?v=2" alt="FirstHey Logo" className="w-full h-full object-contain" />
+        <div className="text-center space-y-3 mb-6">
+          <div className="flex items-center justify-center mx-auto mb-2">
+            <span className="text-2xl font-bold text-slate-900 tracking-tight">FirstHey</span>
           </div>
           <p className="text-xs text-slate-500 max-w-xs mx-auto">
             {isForgotPassword
@@ -104,7 +104,7 @@ export default function LoginPage() {
         </div>
 
         {/* Login Panel */}
-        <div className="bg-white p-8 rounded-3xl space-y-6 border border-slate-200 shadow-xl shadow-slate-200/50">
+        <div className="bg-white p-6 rounded-2xl space-y-5 border border-slate-200 shadow-xl shadow-slate-200/50">
           
           {/* Tabs */}
           {!isForgotPassword && (
@@ -142,7 +142,7 @@ export default function LoginPage() {
                   onChange={(e) => setCompanyName(e.target.value)}
                   placeholder="Acme Corp"
                   required={isSignUp}
-                  className="w-full bg-slate-50 border border-slate-200 focus:bg-white focus:border-indigo-400 focus:ring-2 focus:ring-slate-200 rounded-2xl px-4 py-3 text-sm text-slate-900 placeholder-slate-400 transition-all outline-none"
+                  className="w-full bg-slate-50 border border-slate-200 focus:bg-white focus:border-indigo-400 focus:ring-2 focus:ring-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 placeholder-slate-400 transition-all outline-none"
                 />
               </div>
             )}
@@ -160,7 +160,7 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="rep@yourcompany.com"
                 required
-                className="w-full bg-slate-50 border border-slate-200 focus:bg-white focus:border-indigo-400 focus:ring-2 focus:ring-slate-200 rounded-2xl px-4 py-3 text-sm text-slate-900 placeholder-slate-400 transition-all outline-none"
+                className="w-full bg-slate-50 border border-slate-200 focus:bg-white focus:border-indigo-400 focus:ring-2 focus:ring-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 placeholder-slate-400 transition-all outline-none"
               />
             </div>
 
@@ -190,7 +190,7 @@ export default function LoginPage() {
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
                     required={!isForgotPassword}
-                    className="w-full bg-slate-50 border border-slate-200 focus:bg-white focus:border-indigo-400 focus:ring-2 focus:ring-slate-200 rounded-2xl px-4 py-3 text-sm text-slate-900 placeholder-slate-400 transition-all outline-none"
+                    className="w-full bg-slate-50 border border-slate-200 focus:bg-white focus:border-indigo-400 focus:ring-2 focus:ring-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 placeholder-slate-400 transition-all outline-none"
                   />
                   <button
                   type="button"
@@ -220,7 +220,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-3.5 rounded-2xl bg-blue-600 text-white font-bold text-sm shadow-md hover:bg-blue-700 hover:shadow-lg transition-all flex items-center justify-center gap-2 mt-2 disabled:opacity-70"
+              className="w-full py-2.5 rounded-xl bg-blue-600 text-white font-bold text-sm shadow-md hover:bg-blue-700 hover:shadow-lg transition-all flex items-center justify-center gap-2 mt-2 disabled:opacity-70"
             >
               {isLoading ? (
                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>

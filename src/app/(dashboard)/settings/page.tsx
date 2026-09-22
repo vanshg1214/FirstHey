@@ -105,18 +105,18 @@ export default function SettingsPage() {
   return (
     <div className="flex min-h-screen flex-col px-4 py-8 sm:px-6 lg:px-8 text-slate-900">
       <div className="mx-auto max-w-3xl w-full">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Organization Settings</h1>
-          <p className="mt-2 text-slate-500">
+        <div className="mb-6">
+          <h1 className="text-xl md:text-2xl font-bold text-slate-900 tracking-tight">Organization Settings</h1>
+          <p className="mt-1 text-sm text-slate-500">
             Configure your Bring Your Own Key (BYOK) integrations. These credentials are encrypted and scoped to your organization.
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-8">
+        <form onSubmit={handleSubmit} className="space-y-8" autoComplete="off">
           {/* Organization Profile */}
-          <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="text-xl font-semibold text-slate-900 mb-4 flex items-center">
-              <svg className="w-5 h-5 mr-2 text-slate-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center">
+              <svg className="w-4 h-4 mr-2 text-slate-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
               </svg>
               Organization Profile
@@ -152,10 +152,10 @@ export default function SettingsPage() {
           </div>
 
           {/* AI Settings */}
-          <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-slate-900 flex items-center">
-                <svg className="w-5 h-5 mr-2 text-slate-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <h2 className="text-lg font-bold text-slate-900 flex items-center">
+                <svg className="w-4 h-4 mr-2 text-slate-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
                 Google Gemini AI
@@ -180,6 +180,7 @@ export default function SettingsPage() {
                     onChange={handleChange}
                     className="block w-full rounded-md border border-slate-300 bg-white px-4 py-2 text-slate-900 focus:border-blue-500 focus:ring-blue-500 sm:text-sm shadow-sm"
                     placeholder="AIzaSy..."
+                    autoComplete="new-password"
                   />
                 </div>
                 <p className="mt-2 text-xs text-slate-500">Required for context extraction, card scanning, and automated replies.</p>
@@ -188,10 +189,10 @@ export default function SettingsPage() {
           </div>
 
           {/* Email Settings */}
-          <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-slate-900 flex items-center">
-                <svg className="w-5 h-5 mr-2 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <h2 className="text-lg font-bold text-slate-900 flex items-center">
+                <svg className="w-4 h-4 mr-2 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                 </svg>
                 Email Integration (SMTP/Gmail)
@@ -214,13 +215,16 @@ export default function SettingsPage() {
                   </svg>
                 </div>
                 <div className="ml-3">
-                  <h3 className="text-sm font-medium text-blue-800">How to set up your Gmail integration:</h3>
+                  <h3 className="text-sm font-bold text-blue-800 mb-1">How to set up your Gmail App Password:</h3>
+                  <p className="text-xs text-blue-800 mb-2">Google requires an "App Password" to allow FirstHey to send emails safely on your behalf.</p>
                   <div className="mt-2 text-xs text-blue-700">
-                    <ol className="list-decimal pl-5 space-y-1">
-                      <li>Ensure your Gmail account has <strong>2-Step Verification</strong> turned on.</li>
-                      <li>Go to your Google Account Manage page → Security → <strong>App Passwords</strong>.</li>
-                      <li>Select "Other (Custom name)" and type "FirstHey", then click Generate.</li>
-                      <li>Copy the 16-digit code and paste it into the <strong>App Password</strong> field below (no spaces needed).</li>
+                    <ol className="list-decimal pl-5 space-y-1.5">
+                      <li>Go to your <a href="https://myaccount.google.com/security" target="_blank" rel="noopener noreferrer" className="underline font-bold hover:text-blue-900 text-blue-800">Google Account Security settings</a>.</li>
+                      <li>Ensure <strong>2-Step Verification</strong> is turned ON (Google strictly requires this first).</li>
+                      <li>Use the search bar at the top of your Google settings and search for <strong>"App Passwords"</strong>.</li>
+                      <li>Create a new App Password (you can name it "FirstHey"). Google will generate a 16-character passcode in a yellow box.</li>
+                      <li>Copy that 16-digit passcode (you can ignore the spaces) and paste it exactly into the <strong>App Password</strong> field below.</li>
+                      <li>Finally, put your normal Gmail address in the <strong>Email Address (User)</strong> field.</li>
                     </ol>
                   </div>
                 </div>
@@ -238,6 +242,7 @@ export default function SettingsPage() {
                     onChange={handleChange}
                     className="block w-full rounded-md border border-slate-300 bg-white px-4 py-2 text-slate-900 focus:border-blue-500 focus:ring-blue-500 sm:text-sm shadow-sm"
                     placeholder="John Doe (Sales Team)"
+                    autoComplete="off"
                   />
                 </div>
               </div>
@@ -251,6 +256,7 @@ export default function SettingsPage() {
                     onChange={handleChange}
                     className="block w-full rounded-md border border-slate-300 bg-white px-4 py-2 text-slate-900 focus:border-blue-500 focus:ring-blue-500 sm:text-sm shadow-sm"
                     placeholder="Export Marketing Strategist"
+                    autoComplete="off"
                   />
                 </div>
               </div>
@@ -264,6 +270,7 @@ export default function SettingsPage() {
                     onChange={handleChange}
                     className="block w-full rounded-md border border-slate-300 bg-white px-4 py-2 text-slate-900 focus:border-blue-500 focus:ring-blue-500 sm:text-sm shadow-sm"
                     placeholder="you@company.com"
+                    autoComplete="off"
                   />
                 </div>
               </div>
@@ -277,6 +284,7 @@ export default function SettingsPage() {
                     onChange={handleChange}
                     className="block w-full rounded-md border border-slate-300 bg-white px-4 py-2 text-slate-900 focus:border-blue-500 focus:ring-blue-500 sm:text-sm shadow-sm"
                     placeholder="abcd efgh ijkl mnop"
+                    autoComplete="new-password"
                   />
                 </div>
                 <p className="mt-2 text-xs text-slate-500">Use a 16-digit App Password for Gmail.</p>
@@ -289,7 +297,7 @@ export default function SettingsPage() {
             <button
               type="button"
               onClick={handleSignOut}
-              className="inline-flex items-center justify-center gap-2 rounded-lg border border-red-200 bg-red-50 px-6 py-3 text-sm font-medium text-red-600 shadow-sm hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all"
+              className="inline-flex items-center justify-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-600 shadow-sm hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all"
             >
               <LogOut className="w-4 h-4" />
               Sign Out
@@ -298,7 +306,7 @@ export default function SettingsPage() {
             <button
               type="submit"
               disabled={isSaving}
-              className="inline-flex justify-center rounded-lg border border-transparent bg-blue-600 px-8 py-3 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-white disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              className="inline-flex justify-center rounded-lg border border-transparent bg-blue-600 px-5 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-white disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
               {isSaving ? 'Saving...' : 'Save Settings'}
             </button>

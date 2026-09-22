@@ -74,74 +74,74 @@ export default function ProfilePage() {
         
         {/* Header */}
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-3">
-            <User className="w-8 h-8 text-indigo-600" />
+          <h1 className="text-xl md:text-2xl font-bold text-slate-900 flex items-center gap-2">
+            <User className="w-5 h-5 text-indigo-600" />
             My Profile
           </h1>
-          <p className="text-slate-500 mt-2">Manage your personal account settings and password.</p>
+          <p className="text-sm text-slate-500 mt-1">Manage your personal account settings and password.</p>
         </div>
 
-        <form onSubmit={handleSave} className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="p-6 md:p-8 space-y-6">
+        <form onSubmit={handleSave} className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="p-5 md:p-6 space-y-5">
             
-            <div className="flex items-center gap-6 pb-6 border-b border-slate-100">
-              <div className="w-20 h-20 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center text-3xl font-bold uppercase shadow-sm">
+            <div className="flex items-center gap-4 pb-5 border-b border-slate-100">
+              <div className="w-14 h-14 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center text-xl font-bold uppercase shadow-sm">
                 {profile?.avatar_url ? (
-                  <img src={profile.avatar_url} alt="Avatar" className="w-full h-full rounded-2xl object-cover" />
+                  <img src={profile.avatar_url} alt="Avatar" className="w-full h-full rounded-xl object-cover" />
                 ) : (
                   name ? name.charAt(0) : profile?.email?.charAt(0) || 'U'
                 )}
               </div>
               <div>
-                <h3 className="text-xl font-bold text-slate-900">{profile?.email}</h3>
-                <span className="inline-block mt-1 px-2.5 py-1 bg-slate-100 text-slate-600 rounded-lg text-xs font-bold uppercase tracking-wider">
+                <h3 className="text-lg font-bold text-slate-900">{profile?.email}</h3>
+                <span className="inline-block mt-1 px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md text-[10px] font-bold uppercase tracking-wider">
                   Role: {profile?.role}
                 </span>
               </div>
             </div>
 
-            <div className="space-y-4 pt-2">
+            <div className="space-y-3 pt-1">
               <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                 <User className="w-4 h-4 text-slate-400" />
                 Personal Information
               </h4>
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Full Name</label>
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Full Name</label>
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 focus:border-indigo-500 focus:ring-0 outline-none transition-colors"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:ring-0 outline-none transition-colors"
                   placeholder="John Doe"
                 />
               </div>
             </div>
 
-            <div className="space-y-4 pt-6 border-t border-slate-100">
+            <div className="space-y-3 pt-4 border-t border-slate-100">
               <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                 <Lock className="w-4 h-4 text-slate-400" />
                 Change Password
               </h4>
-              <p className="text-xs text-slate-500">Leave blank if you don't want to change your password.</p>
+              <p className="text-[10px] text-slate-500">Leave blank if you don't want to change your password.</p>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">New Password</label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">New Password</label>
                   <input
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 focus:border-indigo-500 focus:ring-0 outline-none transition-colors"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:ring-0 outline-none transition-colors"
                     placeholder="••••••••"
                   />
                 </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Confirm Password</label>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Confirm Password</label>
                   <input
                     type="password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 focus:border-indigo-500 focus:ring-0 outline-none transition-colors"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:ring-0 outline-none transition-colors"
                     placeholder="••••••••"
                   />
                 </div>
@@ -150,11 +150,11 @@ export default function ProfilePage() {
 
           </div>
           
-          <div className="p-6 bg-slate-50 border-t border-slate-100 flex justify-end">
+          <div className="p-5 bg-slate-50 border-t border-slate-100 flex justify-end">
             <button
               type="submit"
               disabled={isSaving}
-              className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold text-sm shadow-sm hover:bg-indigo-700 hover:-translate-y-0.5 transition-all flex items-center gap-2 disabled:opacity-50"
+              className="px-4 py-2 bg-indigo-600 text-white rounded-lg font-bold text-sm shadow-sm hover:bg-indigo-700 hover:-translate-y-0.5 transition-all flex items-center gap-2 disabled:opacity-50"
             >
               {isSaving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
               Save Changes

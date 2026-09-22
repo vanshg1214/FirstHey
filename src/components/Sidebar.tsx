@@ -66,31 +66,31 @@ export default function Sidebar() {
         `}
       >
         {/* Logo */}
-        <div className="w-full flex items-center justify-center px-2 py-6 border-b border-slate-200 min-h-[80px]">
+        <div className="w-full flex items-center justify-center px-2 py-4 border-b border-slate-200 min-h-[64px]">
           {isExpanded ? (
             <div className="flex flex-shrink-0 items-center justify-center animate-in fade-in zoom-in-95 duration-200 translate-x-1">
-              <span className="text-xl font-black text-slate-900 tracking-tight">First <span className="text-blue-600">Hey</span></span>
+              <span className="text-xl font-black text-slate-900 tracking-tight">FirstHey</span>
             </div>
           ) : (
-            <div className="w-10 h-10 flex-shrink-0 rounded-xl flex items-center justify-center animate-in fade-in zoom-in-95 duration-200 p-0.5 bg-blue-600 text-white font-black text-lg">
+            <div className="flex-shrink-0 flex items-center justify-center animate-in fade-in zoom-in-95 duration-200 text-slate-900 font-black text-lg">
               FH
             </div>
           )}
         </div>
 
         {/* Nav Items */}
-        <nav className="flex-1 w-full px-2 py-4 space-y-1 overflow-hidden">
+        <nav className="flex-1 w-full px-2 py-3 space-y-0.5 overflow-hidden">
           {[...NAV_ITEMS, ...(userRole === 'superadmin' ? ADMIN_NAV_ITEMS : [])].map(({ href, icon: Icon, label, color, hoverBg, activeBg }) => {
             const isActive = pathname === href || (href !== '/leads' && pathname?.startsWith(href));
             return (
               <Link key={href} href={href}>
                 <div className={`
-                  flex items-center gap-3 px-2.5 py-2.5 rounded-xl cursor-pointer
+                  flex items-center gap-2.5 px-2 py-2 rounded-xl cursor-pointer
                   border transition-all duration-200 group
                   ${isActive ? `${activeBg} border-opacity-100` : `border-transparent ${hoverBg} hover:border-slate-200`}
                 `}>
-                  <Icon className={`w-5 h-5 flex-shrink-0 transition-colors ${isActive ? color : `text-slate-500 group-hover:${color}`}`} />
-                  <span className={`text-sm font-semibold whitespace-nowrap transition-all duration-200 ${isExpanded ? 'opacity-100 max-w-full' : 'opacity-0 max-w-0'} ${isActive ? 'text-slate-900' : 'text-slate-500 group-hover:text-slate-900'}`}>
+                  <Icon className={`w-4 h-4 flex-shrink-0 transition-colors ${isActive ? color : `text-slate-500 group-hover:${color}`}`} />
+                  <span className={`text-xs font-bold whitespace-nowrap transition-all duration-200 ${isExpanded ? 'opacity-100 max-w-full' : 'opacity-0 max-w-0'} ${isActive ? 'text-slate-900' : 'text-slate-500 group-hover:text-slate-900'}`}>
                     {label}
                   </span>
                 </div>
