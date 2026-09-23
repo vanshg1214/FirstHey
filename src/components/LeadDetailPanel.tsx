@@ -690,18 +690,18 @@ Does this make sense for your sales process? ✨`;
                   {isDrafting ? (
                     <>
                       <RefreshCw className="w-4 h-4 animate-spin" />
-                      Generating Follow-up Sequence...
+                      Drafting AI Message...
                     </>
                   ) : (
                     <>
-                      <Send className="w-4 h-4" />
-                      Initialize Follow-up Pipeline
+                      <Sparkles className="w-4 h-4" />
+                      Draft AI Email
                     </>
                   )}
                 </button>
               ) : (
                 <div className="w-full py-3.5 px-4 rounded-2xl bg-slate-50/90 border border-dashed border-slate-200 text-slate-400 text-xs font-semibold text-center leading-relaxed">
-                  Add an email address and other details to initialize the follow-up pipeline.
+                  Add an email address and other details to draft a follow-up message.
                 </div>
               )}
             </div>
