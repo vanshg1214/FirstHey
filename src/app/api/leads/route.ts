@@ -11,16 +11,21 @@ export async function GET(req: NextRequest) {
 
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
+
     if (authError || !user) {
       return NextResponse.json({ error: { message: 'Unauthorized' } }, { status: 401 });
     }
-    
+
+    const { data: userData } = await supabase.from('users').select('organization_id').eq('id', user.id).single();
+    if (!userData?.organization_id) {
+      return NextResponse.json({ error: { message: 'No organization found' } }, { status: 400 });
+    }
+
     let query = supabase
       .from('leads')
       .select('*')
       .order('created_at', { ascending: false })
-      .eq('captured_by', user.id);
+      .eq('organization_id', userData.organization_id);
 
     if (statusFilter && statusFilter !== 'all') {
       query = query.eq('status', statusFilter);

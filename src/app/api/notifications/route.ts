@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
+import { getCurrentUserOrgId } from '@/lib/auth';
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
-    const { searchParams } = new URL(req.url);
-    const orgId = searchParams.get('orgId') || '11111111-1111-1111-1111-111111111111';
+    const orgId = await getCurrentUserOrgId();
+    if (!orgId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
     const supabase = await createClient();
     const { data: notifications, error } = await supabase
@@ -26,6 +29,11 @@ export async function GET(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   try {
+    const orgId = await getCurrentUserOrgId();
+    if (!orgId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await req.json();
     const { notificationId } = body;
 
@@ -37,7 +45,8 @@ export async function PATCH(req: NextRequest) {
     const { error } = await supabase
       .from('notifications')
       .update({ is_read: true })
-      .eq('id', notificationId);
+      .eq('id', notificationId)
+      .eq('organization_id', orgId);
 
     if (error) throw error;
 

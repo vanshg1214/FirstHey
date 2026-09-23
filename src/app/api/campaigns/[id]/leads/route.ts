@@ -2,6 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { CampaignsRepository } from '@/lib/repositories/campaigns';
 import { createClient } from '@/utils/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase';
+import { getCurrentUserOrgId } from '@/lib/auth';
+
+async function verifyCampaignInOrg(campaignId: string, orgId: string) {
+  const { data } = await supabaseAdmin.from('campaigns').select('id').eq('id', campaignId).eq('organization_id', orgId).single();
+  return !!data;
+}
 
 export async function POST(
   req: NextRequest,
@@ -18,6 +24,14 @@ export async function POST(
         { data: null, error: { message: 'lead_id is required' } },
         { status: 400 }
       );
+    }
+
+    const orgId = await getCurrentUserOrgId();
+    if (!orgId) {
+      return NextResponse.json({ data: null, error: { message: 'Unauthorized' } }, { status: 401 });
+    }
+    if (!(await verifyCampaignInOrg(campaignId, orgId))) {
+      return NextResponse.json({ data: null, error: { message: 'Campaign not found or access denied' } }, { status: 404 });
     }
 
     const supabase = await createClient();
@@ -51,7 +65,16 @@ export async function DELETE(
       );
     }
 
-    // Use admin client to bypass RLS which silently ignores deletes for regular users
+    const orgId = await getCurrentUserOrgId();
+    if (!orgId) {
+      return NextResponse.json({ data: null, error: { message: 'Unauthorized' } }, { status: 401 });
+    }
+    if (!(await verifyCampaignInOrg(campaignId, orgId))) {
+      return NextResponse.json({ data: null, error: { message: 'Campaign not found or access denied' } }, { status: 404 });
+    }
+
+    // Use admin client to bypass RLS which silently ignores deletes for regular users.
+    // Ownership was already verified above, so this is safe.
     await CampaignsRepository.removeLeadFromCampaign(supabaseAdmin, campaignId, leadId);
 
     return NextResponse.json({ data: { success: true }, error: null });

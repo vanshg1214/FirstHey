@@ -3,6 +3,7 @@ import { NotesOcrAgent } from '@/lib/agents/notesOcr';
 import { ContextMergeAgent } from '@/lib/agents/contextMerge';
 import { supabaseAdmin } from '@/lib/supabase';
 import { LeadsRepository } from '@/lib/repositories/leads';
+import { getCurrentUserOrgId } from '@/lib/auth';
 
 export async function POST(req: NextRequest) {
   try {
@@ -38,13 +39,19 @@ export async function POST(req: NextRequest) {
     const extractedContext = await NotesOcrAgent.processNotes(parsedImages);
     let finalContext = extractedContext;
 
-    // If leadId is provided, merge with existing context and save to DB
+    // If leadId is provided, merge with existing context and save to DB (scoped to this org)
     if (leadId) {
       try {
+        const orgId = await getCurrentUserOrgId();
+        if (!orgId) {
+          return NextResponse.json({ data: null, error: { code: 'UNAUTHORIZED', message: 'Unauthorized' } }, { status: 401 });
+        }
+
         const { data: lead } = await supabaseAdmin
           .from('leads')
           .select('context_summary')
           .eq('id', leadId)
+          .eq('organization_id', orgId)
           .single();
 
         if (lead && lead.context_summary) {
@@ -56,7 +63,8 @@ export async function POST(req: NextRequest) {
         await supabaseAdmin
           .from('leads')
           .update({ context_summary: finalContext })
-          .eq('id', leadId);
+          .eq('id', leadId)
+          .eq('organization_id', orgId);
       } catch (dbError) {
         console.error('Error fetching/merging lead context:', dbError);
         // Fallback to just the extracted notes context if DB operation fails

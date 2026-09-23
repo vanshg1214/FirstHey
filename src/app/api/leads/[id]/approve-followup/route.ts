@@ -3,6 +3,7 @@ import { LeadsRepository } from '@/lib/repositories/leads';
 import { supabaseAdmin } from '@/lib/supabase';
 import { EmailService } from '@/lib/services/email';
 import { SettingsService } from '@/lib/services/settings';
+import { getCurrentUserOrgId } from '@/lib/auth';
 
 export async function POST(
   req: NextRequest,
@@ -20,9 +21,14 @@ export async function POST(
       );
     }
 
+    const orgId = await getCurrentUserOrgId();
+    if (!orgId) {
+      return NextResponse.json({ data: null, error: { code: 'UNAUTHORIZED', message: 'Unauthorized' } }, { status: 401 });
+    }
+
     const supabase = supabaseAdmin;
     const lead = await LeadsRepository.getLeadById(supabase, id);
-    if (!lead) {
+    if (!lead || lead.organization_id !== orgId) {
       return NextResponse.json({ data: null, error: { code: 'NOT_FOUND', message: 'Not found' } }, { status: 404 });
     }
 

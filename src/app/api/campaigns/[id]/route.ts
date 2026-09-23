@@ -3,6 +3,7 @@ import { CampaignsRepository } from '@/lib/repositories/campaigns';
 import { createClient } from '@/utils/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { ZohoCampaignsService } from '@/lib/services/zohoCampaigns';
+import { getCurrentUserOrgId } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -192,8 +193,22 @@ export async function PUT(
     const resolvedParams = await params;
     const campaignId = resolvedParams.id;
     const body = await req.json();
+
+    const orgId = await getCurrentUserOrgId();
+    if (!orgId) {
+      return NextResponse.json({ data: null, error: { message: 'Unauthorized' } }, { status: 401 });
+    }
+
     const supabase = supabaseAdmin;
-    const updatedCampaign = await CampaignsRepository.updateCampaign(supabase, campaignId, body);
+    const { data: existing } = await supabase.from('campaigns').select('id').eq('id', campaignId).eq('organization_id', orgId).single();
+    if (!existing) {
+      return NextResponse.json({ data: null, error: { message: 'Campaign not found or access denied' } }, { status: 404 });
+    }
+
+    // Never allow the request body to move a campaign into another org
+    const safeUpdates = { ...body };
+    delete safeUpdates.organization_id;
+    const updatedCampaign = await CampaignsRepository.updateCampaign(supabase, campaignId, safeUpdates);
     return NextResponse.json({ data: updatedCampaign, error: null });
   } catch (error: any) {
     console.error(`Failed to update campaign:`, error);
@@ -211,7 +226,18 @@ export async function DELETE(
   try {
     const resolvedParams = await params;
     const campaignId = resolvedParams.id;
+
+    const orgId = await getCurrentUserOrgId();
+    if (!orgId) {
+      return NextResponse.json({ data: null, error: { message: 'Unauthorized' } }, { status: 401 });
+    }
+
     const supabase = supabaseAdmin;
+    const { data: existing } = await supabase.from('campaigns').select('id').eq('id', campaignId).eq('organization_id', orgId).single();
+    if (!existing) {
+      return NextResponse.json({ data: null, error: { message: 'Campaign not found or access denied' } }, { status: 404 });
+    }
+
     await CampaignsRepository.archiveCampaign(supabase, campaignId);
     return NextResponse.json({ data: { success: true }, error: null });
   } catch (error: any) {

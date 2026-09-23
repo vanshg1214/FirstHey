@@ -6,21 +6,23 @@ import { createClient } from '@/utils/supabase/server';
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { organizationId, userId, campaignId } = body;
+    const { userId, campaignId } = body;
 
-    let orgId = await getCurrentUserOrgId();
-    if (!orgId) orgId = organizationId; // Fallback to client-provided if not authenticated
+    // The organization is always derived from the authenticated session —
+    // never trust a client-supplied organizationId, since this insert uses
+    // the admin client and bypasses RLS.
+    const orgId = await getCurrentUserOrgId();
 
     if (!orgId) {
       return NextResponse.json(
         {
           data: null,
           error: {
-            code: 'VALIDATION_ERROR',
-            message: 'Missing required parameter: organizationId',
+            code: 'UNAUTHORIZED',
+            message: 'Unauthorized',
           },
         },
-        { status: 400 }
+        { status: 401 }
       );
     }
 

@@ -4,6 +4,7 @@ import { FollowupDraftAgent } from '@/lib/agents/followupDraft';
 import { CompanyResearchAgent } from '@/lib/agents/companyResearch';
 import { supabaseAdmin } from '@/lib/supabase';
 import { SettingsService } from '@/lib/services/settings';
+import { getCurrentUserOrgId } from '@/lib/auth';
 
 export async function POST(
   req: NextRequest,
@@ -27,8 +28,17 @@ export async function POST(
       );
     }
 
-    // 1. Update the contact fields in the database
+    const orgId = await getCurrentUserOrgId();
+    if (!orgId) {
+      return NextResponse.json({ data: null, error: { code: 'UNAUTHORIZED', message: 'Unauthorized' } }, { status: 401 });
+    }
+
+    // 1. Update the contact fields in the database (scoped to this org)
     const supabase = supabaseAdmin;
+    const existingLead = await LeadsRepository.getLeadById(supabase, id);
+    if (!existingLead || existingLead.organization_id !== orgId) {
+      return NextResponse.json({ data: null, error: { code: 'NOT_FOUND', message: 'Lead not found or access denied' } }, { status: 404 });
+    }
     const updatedLead = await LeadsRepository.updateContactFields(supabase, id, contactFields, 'confirmed');
 
     // 2. Extract conversation context from database lead record

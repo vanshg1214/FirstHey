@@ -41,13 +41,15 @@ export async function POST(req: NextRequest) {
     const supabase = await createClient();
     const formData = await req.formData();
     const audioFile = formData.get('audio') as Blob | null;
-    let organizationId = await getCurrentUserOrgId();
-    if (!organizationId) {
-      organizationId = formData.get('organizationId') as string | null;
-    }
+
+    // The organization is always derived from the authenticated session —
+    // never trust a client-supplied organizationId (it would let a caller
+    // spend another organization's Gemini quota and, for the admin-client
+    // insert paths below, write leads into an org they don't belong to).
+    const organizationId = await getCurrentUserOrgId();
 
     if (!organizationId) {
-      return NextResponse.json({ data: null, error: { code: 'VALIDATION_ERROR', message: 'organizationId is required' } }, { status: 400 });
+      return NextResponse.json({ data: null, error: { code: 'UNAUTHORIZED', message: 'Unauthorized' } }, { status: 401 });
     }
 
     const settings = await SettingsService.getSettings(organizationId);

@@ -5,8 +5,22 @@ import { SettingsService } from '@/lib/services/settings';
 
 export async function POST(req: NextRequest) {
   try {
+    // This endpoint is intentionally public (proxy.ts exempts /api/webhooks so
+    // the email provider can reach it without a logged-in session), which means
+    // anyone on the internet can otherwise POST a fabricated "reply" for any
+    // lead's email address. Require a shared secret configured on both sides.
+    const webhookSecret = process.env.INBOUND_EMAIL_WEBHOOK_SECRET;
+    if (webhookSecret) {
+      const providedSecret = req.headers.get('x-webhook-secret');
+      if (providedSecret !== webhookSecret) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+    } else {
+      console.warn('[inbound-email webhook] INBOUND_EMAIL_WEBHOOK_SECRET is not set — this endpoint currently accepts unauthenticated requests. Set it and have your email provider send it back as the x-webhook-secret header.');
+    }
+
     const body = await req.json();
-    
+
     // Webhook payload standard (SendGrid/Resend style mock)
     const { from_email, text, subject } = body;
 
