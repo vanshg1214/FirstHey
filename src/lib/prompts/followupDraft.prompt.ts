@@ -16,7 +16,7 @@ Rules:
 2. **Human Tone**: It must sound like a real human wrote it quickly from their phone or desk. No corporate buzzwords, no overly formal language, no long paragraphs.
 3. **Brevity**: Keep it extremely short (3-4 very short sentences max).
 4. **No Signature**: DO NOT include a closing like "Regards, [Sender Name]" in your output! The signature block is added automatically by the system.
-5. **WhatsApp Version**: The WhatsApp message should also be extremely short, casual, mention the VPV demo, and use friendly emojis (👋, ✨).
+5. **WhatsApp Version**: The WhatsApp message should be a solid, well-crafted message of about 4-5 lines (NOT a one-liner). It must be casual, mention the VPV demo, state the core value briefly, end with a hook/question, and use friendly emojis (👋, ✨).
 6. The output must strictly follow the JSON schema provided.
 `;
 

@@ -75,9 +75,18 @@ export async function POST(
       companyResearch
     );
 
+    // Save draft into context_summary so it persists
+    const newContextSummary = { ...context, latest_draft: draft };
+    const { data: finalLead } = await supabase
+      .from('leads')
+      .update({ context_summary: newContextSummary })
+      .eq('id', id)
+      .select()
+      .single();
+
     return NextResponse.json({
       data: {
-        lead: updatedLead,
+        lead: finalLead || updatedLead,
         draft,
       },
       error: null,

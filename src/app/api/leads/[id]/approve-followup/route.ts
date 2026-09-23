@@ -64,6 +64,18 @@ export async function POST(
           .from('leads')
           .update({ status: 'contacted' })
           .eq('id', id);
+
+        // Insert into followups table to log it
+        await supabase.from('followups').insert({
+          lead_id: id,
+          sequence_position: 1,
+          channel: 'email',
+          status: 'sent',
+          subject: subject,
+          body: emailBody,
+          scheduled_for: new Date().toISOString(),
+          sent_at: new Date().toISOString(),
+        });
       } else {
         await supabase
           .from('leads')

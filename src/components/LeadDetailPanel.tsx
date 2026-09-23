@@ -109,6 +109,19 @@ export default function LeadDetailPanel({ lead, onClose, onRefresh }: LeadDetail
   }, []);
 
   const handleGenerateDraft = async () => {
+    // Validation: Ask user for missing crucial info
+    if (!contact.email || !contact.company || !contact.name) {
+      setError('Missing crucial information (Name, Company, or Email). Please fill them out before initializing the pipeline.');
+      setIsEditing(true);
+      return;
+    }
+
+    // If we already have a generated draft saved, use it!
+    if (lead.context_summary?.latest_draft) {
+      setEmailDraft(lead.context_summary.latest_draft);
+      return;
+    }
+
     setIsDrafting(true);
     setError(null);
     try {
@@ -609,34 +622,74 @@ export default function LeadDetailPanel({ lead, onClose, onRefresh }: LeadDetail
           )}
         </div>
 
-        {/* 2. Follow-up Pipeline Action (If no sequence is scheduled yet) */}
-        {followups.length === 0 && (
-          <div className="w-full">
-            {contact.email ? (
-              <button
-                onClick={handleGenerateDraft}
-                disabled={isDrafting}
-                className="w-full py-3.5 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm shadow-lg transition-all flex items-center justify-center gap-2 disabled:bg-slate-800 disabled:text-slate-400 disabled:cursor-not-allowed hover:scale-[1.01] active:scale-[0.98]"
-              >
-                {isDrafting ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                    Generating Follow-up Sequence...
-                  </>
-                ) : (
-                  <>
-                    <Send className="w-4 h-4" />
-                    Initialize Follow-up Pipeline
-                  </>
-                )}
-              </button>
-            ) : (
-              <div className="w-full py-3.5 px-4 rounded-2xl bg-slate-50/90 border border-dashed border-slate-200 text-slate-400 text-xs font-semibold text-center leading-relaxed">
-                Add an email address to initialize the 3-month follow-up pipeline.
+        {/* 2. Follow-up Messages */}
+        <div className="w-full space-y-3">
+          {followups.length > 0 ? (
+            <div className="bg-white border border-slate-200 shadow-sm rounded-xl p-5 space-y-4">
+              <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center justify-between border-b border-slate-200/40 pb-2">
+                <span className="flex items-center gap-1.5">
+                  <Send className="w-4 h-4 text-emerald-600" />
+                  Sent Follow-ups
+                </span>
+                <button
+                  onClick={handleGenerateDraft}
+                  className="text-[10px] text-blue-600 hover:text-blue-800 font-bold bg-blue-50 px-2 py-1 rounded transition-colors"
+                >
+                  Send Another
+                </button>
+              </h4>
+              <div className="space-y-3">
+                {followups.map((f: any) => (
+                  <div key={f.id} className="p-3 bg-slate-50 border border-slate-100 rounded-lg space-y-2">
+                    <div className="flex items-center gap-2 mb-1">
+                      {f.channel === 'email' ? (
+                        <Mail className="w-4 h-4 text-blue-600" />
+                      ) : (
+                        <MessageCircle className="w-4 h-4 text-emerald-600" />
+                      )}
+                      <span className="text-[10px] font-bold text-slate-500 uppercase">
+                        {f.channel === 'email' ? 'Email Sent' : 'WhatsApp Sent'}
+                      </span>
+                      <span className="text-[10px] text-slate-400 ml-auto">
+                        {new Date(f.sent_at || f.created_at).toLocaleString()}
+                      </span>
+                    </div>
+                    {f.subject && <div className="text-xs font-semibold text-slate-900 border-b border-slate-200 pb-1">{f.subject}</div>}
+                    <div className="text-xs text-slate-600 whitespace-pre-line leading-relaxed font-serif">
+                      {f.body}
+                    </div>
+                  </div>
+                ))}
               </div>
-            )}
-          </div>
-        )}
+            </div>
+          ) : (
+            <div className="w-full">
+              {contact.email ? (
+                <button
+                  onClick={handleGenerateDraft}
+                  disabled={isDrafting}
+                  className="w-full py-3.5 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm shadow-lg transition-all flex items-center justify-center gap-2 disabled:bg-slate-800 disabled:text-slate-400 disabled:cursor-not-allowed hover:scale-[1.01] active:scale-[0.98]"
+                >
+                  {isDrafting ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      Generating Follow-up Sequence...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4" />
+                      Initialize Follow-up Pipeline
+                    </>
+                  )}
+                </button>
+              ) : (
+                <div className="w-full py-3.5 px-4 rounded-2xl bg-slate-50/90 border border-dashed border-slate-200 text-slate-400 text-xs font-semibold text-center leading-relaxed">
+                  Add an email address and other details to initialize the follow-up pipeline.
+                </div>
+              )}
+            </div>
+          )}
+        </div>
 
 
 

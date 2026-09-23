@@ -153,12 +153,12 @@ export default function FollowupDraftEditor({
       return;
     }
 
-    // 3. Update lead status in background
-    fetch(`/api/leads/${leadId}/status`, {
+    // 3. Log WhatsApp send and update lead status in background
+    fetch(`/api/leads/${leadId}/log-whatsapp`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        status: 'contacted',
+        whatsappBody: draft.whatsappBody,
       }),
     }).catch(console.error);
 
