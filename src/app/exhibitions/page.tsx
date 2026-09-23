@@ -23,7 +23,7 @@ export default function ExhibitionsDashboard() {
   const fetchExhibitions = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch('/api/exhibitions');
+      const res = await fetch(`/api/exhibitions?t=${Date.now()}`, { cache: 'no-store' });
       if (!res.ok) throw new Error('Failed to fetch');
       const { data } = await res.json();
       setExhibitions(data || []);

@@ -47,7 +47,7 @@ function CaptureDashboardContent() {
     }
     
     // Fetch all exhibitions for the dropdown
-    fetch('/api/exhibitions')
+    fetch(`/api/exhibitions?t=${Date.now()}`, { cache: 'no-store' })
       .then(res => res.json())
       .then(res => {
         if (res.data) setExhibitionsList(res.data);

@@ -39,7 +39,7 @@ export default function ExhibitionDetail({ params }: { params: Promise<{ id: str
       // 2. Fetch Leads for this exhibition
       // We can use the existing leads API but filter by exhibition client-side for now, 
       // or we just fetch all and filter since there's no native exhibition_id filter in GET /api/leads yet.
-      const leadsRes = await fetch('/api/leads?status=all');
+      const leadsRes = await fetch(`/api/leads?status=all&t=${Date.now()}`, { cache: 'no-store' });
       if (!leadsRes.ok) throw new Error('Failed to load leads');
       const { data: leadsData } = await leadsRes.json();
       
