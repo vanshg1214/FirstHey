@@ -22,19 +22,19 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const exhibitionFilter = searchParams.get('exhibition');
 
-    // Fetch all exhibitions for the dropdown
+    // Fetch all exhibitions for the dropdown — scoped to this user's leads
     const { data: allExhibitionData } = await supabase
       .from('leads')
       .select('exhibition')
-      .eq('organization_id', orgId)
+      .eq('captured_by', user.id)
       .not('exhibition', 'is', null);
     const exhibitionsList = Array.from(new Set((allExhibitionData || []).map(l => l.exhibition).filter(Boolean)));
 
-    // Fetch leads for sentiment and volume
+    // Fetch leads for sentiment and volume — scoped to this user only
     let query = supabase
       .from('leads')
       .select('id, created_at, notes, status, open_count, is_opened, exhibition')
-      .eq('organization_id', orgId);
+      .eq('captured_by', user.id);
 
     if (exhibitionFilter && exhibitionFilter !== 'all') {
       query = query.eq('exhibition', exhibitionFilter);
