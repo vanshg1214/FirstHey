@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Calendar, Plus, MapPin, Users, LayoutDashboard, Search, ChevronRight } from 'lucide-react';
+import { Calendar, Plus, MapPin, Users, LayoutDashboard, Search, ChevronRight, Trash2 } from 'lucide-react';
 import { useToast } from '@/components/Toast';
 
 export default function ExhibitionsDashboard() {
@@ -51,6 +51,22 @@ export default function ExhibitionsDashboard() {
       addToast('success', 'Exhibition created successfully');
       setIsModalOpen(false);
       setFormData({ name: '', location: '', start_date: '', end_date: '', description: '' });
+      fetchExhibitions();
+    } catch (err: any) {
+      addToast('error', err.message);
+    }
+  };
+
+  const handleDeleteExhibition = async (e: React.MouseEvent, id: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!confirm('Are you sure you want to delete this exhibition? This action cannot be undone.')) return;
+    
+    try {
+      const res = await fetch(`/api/exhibitions/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete exhibition');
+      
+      addToast('success', 'Exhibition deleted successfully');
       fetchExhibitions();
     } catch (err: any) {
       addToast('error', err.message);
@@ -136,7 +152,16 @@ export default function ExhibitionsDashboard() {
                 <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-md hover:border-blue-300 transition-all cursor-pointer group flex flex-col h-full">
                   <div className="flex justify-between items-start mb-3">
                     <h3 className="font-bold text-base text-slate-900 group-hover:text-blue-700 transition-colors">{ex.name}</h3>
-                    <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-blue-500 transition-transform group-hover:translate-x-1" />
+                    <div className="flex items-center gap-1">
+                      <button 
+                        onClick={(e) => handleDeleteExhibition(e, ex.id)}
+                        className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors z-10"
+                        title="Delete Exhibition"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                      <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-blue-500 transition-transform group-hover:translate-x-1" />
+                    </div>
                   </div>
                   
                   <div className="space-y-1.5 mt-auto">

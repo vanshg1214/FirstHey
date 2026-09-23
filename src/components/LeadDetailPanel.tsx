@@ -382,6 +382,34 @@ Does this make sense for your sales process? ✨`;
     window.open(`https://wa.me/${phone}?text=${message}`, '_blank');
   };
 
+  const handleDeleteLead = async () => {
+    if (!confirm('Are you sure you want to delete this lead? This cannot be undone.')) return;
+    
+    try {
+      const res = await fetch(`/api/leads/${lead.id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete lead');
+      
+      onRefresh();
+      onClose();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
+
+  const handleDeleteLead = async () => {
+    if (!confirm('Are you sure you want to delete this lead? This cannot be undone.')) return;
+    
+    try {
+      const res = await fetch(`/api/leads/${lead.id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete lead');
+      
+      onRefresh();
+      onClose();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
+
   const getSentimentColor = (sentiment: string) => {
     switch (sentiment?.toLowerCase()) {
       case 'positive':
@@ -422,6 +450,13 @@ Does this make sense for your sales process? ✨`;
           </div>
           <div className="flex items-center gap-2">
             <LeadStatusBadge status={lead.status} />
+            <button
+              onClick={handleDeleteLead}
+              title="Delete Lead"
+              className="p-1.5 ml-2 rounded-xl text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all border border-transparent hover:border-red-100"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
           </div>
         </div>
 
