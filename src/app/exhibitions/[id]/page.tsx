@@ -3,7 +3,7 @@
 import React, { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Users, Mail, Loader2, Calendar, MapPin, Send, Plus } from 'lucide-react';
+import { ArrowLeft, Users, Mail, Loader2, Calendar, MapPin, Send, Plus, Sparkles } from 'lucide-react';
 import { useToast } from '@/components/Toast';
 import LeadList from '@/components/LeadList';
 import { getOrganizationSettings } from '@/lib/actions/settings';
