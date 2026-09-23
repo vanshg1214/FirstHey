@@ -6,22 +6,18 @@ export class EmailService {
    * Returns null if credentials are not configured, triggering console fallback.
    */
   private static getTransporter(user?: string, pass?: string) {
-    const finalUser = user || process.env.GMAIL_USER;
-    const finalPass = pass || process.env.GMAIL_APP_PASSWORD;
-
-    if (!finalUser || !finalPass) {
-      console.warn('Email credentials missing. Email service is running in Console Log fallback mode.');
+    if (!user || !pass) {
       return null;
     }
 
-    if (finalPass.startsWith('re_')) {
+    if (pass.startsWith('re_')) {
       return nodemailer.createTransport({
         host: 'smtp.resend.com',
         port: 465,
         secure: true,
         auth: {
           user: 'resend',
-          pass: finalPass,
+          pass: pass,
         },
       });
     }
@@ -29,8 +25,8 @@ export class EmailService {
     return nodemailer.createTransport({
       service: 'gmail',
       auth: {
-        user: finalUser,
-        pass: finalPass,
+        user: user,
+        pass: pass,
       },
     });
   }
@@ -51,20 +47,19 @@ export class EmailService {
     appUrl?: string,
     attachments?: { filename: string; content: string; encoding: string }[]
   ): Promise<string> {
-    let finalUser = credentials.user || process.env.GMAIL_USER;
-    let finalPass = credentials.pass || process.env.GMAIL_APP_PASSWORD;
+    const finalUser = credentials.user;
+    const finalPass = credentials.pass;
 
-    // Force Gmail override if the provided custom pass is a Resend API key and a Gmail app password exists in .env
-    if (credentials.pass?.startsWith('re_') && process.env.GMAIL_APP_PASSWORD) {
-      finalUser = process.env.GMAIL_USER;
-      finalPass = process.env.GMAIL_APP_PASSWORD;
+    if (!finalUser || !finalPass) {
+      throw new Error('Email credentials missing. Please configure your email in Settings.');
     }
+
     const transporter = this.getTransporter(finalUser, finalPass);
-    let fromAddress = finalUser || 'test@gmail.com';
-    const fromName = credentials.fromName || finalUser?.split('@')[0] || '';
+    let fromAddress = finalUser;
+    const fromName = credentials.fromName || finalUser.split('@')[0] || '';
     let finalTo = to;
 
-    if (finalPass?.startsWith('re_')) {
+    if (finalPass.startsWith('re_')) {
       // Resend free tier restrictions
       fromAddress = 'onboarding@resend.dev';
       finalTo = 'avrsmain@gmail.com';
@@ -87,20 +82,7 @@ export class EmailService {
     const htmlBody = this.generateHtml(body, fromName, credentials.fromTitle || 'Export Marketing Strategist', pixelTag);
 
     if (!transporter) {
-      // Mock sending by logging to output console
-      console.log(`
-==================================================
-[MOCK EMAIL DISPATCH]
-To: ${to}
-From: "${fromName}" <${fromAddress}>
-Subject: ${subject}
-Tracking: ${leadId ? 'enabled' : 'disabled'}
---------------------------------------------------
-Text:
-${textBody}
-==================================================
-      `);
-      return `mock-email-id-${Date.now()}`;
+      throw new Error('Failed to initialize email transporter.');
     }
 
     try {

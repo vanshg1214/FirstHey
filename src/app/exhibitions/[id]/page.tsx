@@ -6,6 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Users, Mail, Loader2, Calendar, MapPin, Send, Plus } from 'lucide-react';
 import { useToast } from '@/components/Toast';
 import LeadList from '@/components/LeadList';
+import { getOrganizationSettings } from '@/lib/actions/settings';
 
 export default function ExhibitionDetail({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
@@ -15,6 +16,7 @@ export default function ExhibitionDetail({ params }: { params: Promise<{ id: str
   const [exhibition, setExhibition] = useState<any>(null);
   const [leads, setLeads] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isEmailConfigured, setIsEmailConfigured] = useState(false);
   
   // Email Blast Modal State
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
@@ -43,6 +45,14 @@ export default function ExhibitionDetail({ params }: { params: Promise<{ id: str
       
       const exLeads = (leadsData || []).filter((l: any) => l.exhibition_id === resolvedParams.id);
       setLeads(exLeads);
+
+      // 3. Check Email Settings
+      const orgSettings = await getOrganizationSettings();
+      if (orgSettings?.email_user && orgSettings?.email_password) {
+        setIsEmailConfigured(true);
+      } else {
+        setIsEmailConfigured(false);
+      }
     } catch (err: any) {
       addToast('error', err.message);
     } finally {
@@ -221,6 +231,16 @@ export default function ExhibitionDetail({ params }: { params: Promise<{ id: str
             
             {emailBlastStep === 1 ? (
               <div className="p-5 space-y-4">
+                {!isEmailConfigured && (
+                  <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 mb-4">
+                    <h3 className="text-orange-800 font-bold text-sm mb-1">Email Settings Required</h3>
+                    <p className="text-orange-700 text-xs mb-3">You must configure your email address and app password before you can send an email blast.</p>
+                    <Link href="/settings" className="inline-block px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold rounded-lg shadow-sm transition-colors">
+                      Go to Settings
+                    </Link>
+                  </div>
+                )}
+                
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-2">
                     <input 
@@ -283,7 +303,7 @@ export default function ExhibitionDetail({ params }: { params: Promise<{ id: str
                   <button 
                     type="button" 
                     onClick={() => setEmailBlastStep(2)} 
-                    disabled={selectedLeadIds.size === 0} 
+                    disabled={selectedLeadIds.size === 0 || !isEmailConfigured} 
                     className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold rounded-lg transition-colors shadow-lg flex items-center justify-center gap-1.5 text-sm"
                   >
                     Next ({selectedLeadIds.size} Selected)
