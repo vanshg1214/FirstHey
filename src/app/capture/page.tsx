@@ -563,13 +563,13 @@ function CaptureDashboardContent() {
 
       {/* Premium Header */}
       <header className="w-full max-w-6xl mx-auto flex flex-col md:flex-row md:items-center justify-between py-4 z-10 gap-4 md:gap-6">
-        <Link 
-          href="/leads" 
+        <button 
+          onClick={handleExit}
           className="flex items-center text-sm font-medium text-slate-500 hover:text-slate-800 transition-colors"
         >
           <ChevronLeft className="w-5 h-5 mr-1" />
-          Back to Dashboard
-        </Link>
+          {exhibitionId ? 'Back to Exhibition' : 'Back to Dashboard'}
+        </button>
         
         <div className="flex items-center justify-between w-full md:w-auto gap-1 bg-white/80 backdrop-blur-md border border-slate-200 p-1 rounded-xl shadow-sm">
           {[

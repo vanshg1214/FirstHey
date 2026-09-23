@@ -51,6 +51,8 @@ export async function PATCH(
     if (body.notes !== undefined) allowedFields.notes = body.notes;
     if (body.status !== undefined) allowedFields.status = body.status;
     if (body.context_summary !== undefined) allowedFields.context_summary = body.context_summary;
+    if (body.exhibition_id !== undefined) allowedFields.exhibition_id = body.exhibition_id;
+    if (body.exhibition !== undefined) allowedFields.exhibition = body.exhibition;
 
     if (Object.keys(allowedFields).length === 0) {
       return NextResponse.json({ data: null, error: { code: 'NO_FIELDS', message: 'No valid fields provided to update.' } }, { status: 400 });

@@ -39,6 +39,16 @@ export default function LeadDetailPanel({ lead, onClose, onRefresh }: LeadDetail
   const [error, setError] = useState<string | null>(null);
   const [notes, setNotes] = useState<string>(lead.notes || '');
   const [isSavingNotes, setIsSavingNotes] = useState(false);
+  const [exhibitions, setExhibitions] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetch('/api/exhibitions?t=' + Date.now())
+      .then(res => res.json())
+      .then(res => {
+        if (res.data) setExhibitions(res.data);
+      })
+      .catch(console.error);
+  }, []);
 
   const contact = lead.contact_fields || {};
   const name = lead.name || lead.contact_fields?.name || 'Unknown Lead';
@@ -68,6 +78,7 @@ export default function LeadDetailPanel({ lead, onClose, onRefresh }: LeadDetail
   const [editTitle, setEditTitle] = useState(contact.title || '');
   const [editEmail, setEditEmail] = useState(contact.email || '');
   const [editPhone, setEditPhone] = useState(contact.phone || '');
+  const [editExhibitionId, setEditExhibitionId] = useState(lead.exhibition_id || '');
   const [isSavingFields, setIsSavingFields] = useState(false);
 
   // Follow-up generation State
@@ -199,6 +210,19 @@ export default function LeadDetailPanel({ lead, onClose, onRefresh }: LeadDetail
         const result = await response.json();
         throw new Error(result.error?.message || 'Failed to save changes.');
       }
+      
+      if (editExhibitionId !== lead.exhibition_id) {
+        const selectedEx = exhibitions.find(e => e.id === editExhibitionId);
+        await fetch(`/api/leads/${lead.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            exhibition_id: editExhibitionId || null,
+            exhibition: selectedEx ? selectedEx.name : null 
+          })
+        });
+      }
+
       setIsEditing(false);
       onRefresh();
     } catch (err: any) {
@@ -602,6 +626,19 @@ Does this make sense for your sales process? ✨`;
                   placeholder="e.g. +1 555-0199"
                 />
               </div>
+              <div className="space-y-1">
+                <label className="text-[10px] uppercase font-bold text-slate-400">Exhibition</label>
+                <select
+                  value={editExhibitionId}
+                  onChange={(e) => setEditExhibitionId(e.target.value)}
+                  className="w-full bg-white/90 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:border-blue-500 focus:ring-0 outline-none"
+                >
+                  <option value="">-- None --</option>
+                  {exhibitions.map(ex => (
+                    <option key={ex.id} value={ex.id}>{ex.name}</option>
+                  ))}
+                </select>
+              </div>
               <div className="flex gap-2 pt-2">
                 <button
                   onClick={handleSaveFields}
@@ -642,6 +679,13 @@ Does this make sense for your sales process? ✨`;
                   ) : (
                     <span className="text-slate-400 italic">None</span>
                   )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-slate-400" />
+                  <span className="text-slate-700">Exhibition:</span>
+                  <span className={lead.exhibition ? "text-slate-900" : "text-slate-400 italic"}>
+                    {lead.exhibition || 'None'}
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Phone className="w-4 h-4 text-slate-400" />
