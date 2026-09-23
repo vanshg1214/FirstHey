@@ -73,6 +73,8 @@ export default function LeadDetailPanel({ lead, onClose, onRefresh }: LeadDetail
   // Follow-up generation State
   const [isDrafting, setIsDrafting] = useState(false);
   const [emailDraft, setEmailDraft] = useState<{ subject: string; emailBody: string; whatsappBody: string } | null>(null);
+  const [customContext, setCustomContext] = useState('');
+  const [showContextInput, setShowContextInput] = useState(false);
 
   // Scanning State
   const [isScanningCard, setIsScanningCard] = useState(false);
@@ -108,7 +110,7 @@ export default function LeadDetailPanel({ lead, onClose, onRefresh }: LeadDetail
     };
   }, []);
 
-  const handleGenerateDraft = async () => {
+  const handleGenerateDraft = async (forceNew: boolean = false) => {
     // Validation: Ask user for missing crucial info
     if (!contact.email || !contact.company || !contact.name) {
       setError('Missing crucial information (Name, Company, or Email). Please fill them out before initializing the pipeline.');
@@ -116,8 +118,8 @@ export default function LeadDetailPanel({ lead, onClose, onRefresh }: LeadDetail
       return;
     }
 
-    // If we already have a generated draft saved, use it!
-    if (lead.context_summary?.latest_draft) {
+    // If we already have a generated draft saved and not forcing a new one, use it!
+    if (!forceNew && !customContext && lead.context_summary?.latest_draft) {
       setEmailDraft(lead.context_summary.latest_draft);
       return;
     }
@@ -131,6 +133,7 @@ export default function LeadDetailPanel({ lead, onClose, onRefresh }: LeadDetail
         body: JSON.stringify({
           contactFields: contact,
           senderName: 'Sales Exec',
+          customContext: customContext || undefined
         }),
       });
 
@@ -649,12 +652,36 @@ Does this make sense for your sales process? ✨`;
                   Sent Follow-ups
                 </span>
                 <button
-                  onClick={handleGenerateDraft}
+                  onClick={() => setShowContextInput(!showContextInput)}
                   className="text-[10px] text-blue-600 hover:text-blue-800 font-bold bg-blue-50 px-2 py-1 rounded transition-colors"
                 >
                   Send Another
                 </button>
               </h4>
+              
+              {showContextInput && (
+                <div className="bg-blue-50/50 border border-blue-100 rounded-lg p-3 space-y-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase">Context for New Email (Optional)</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Offer them a 10% discount this time"
+                    value={customContext}
+                    onChange={e => setCustomContext(e.target.value)}
+                    className="w-full bg-white border border-blue-200 rounded-lg px-3 py-2 text-xs outline-none focus:border-blue-500 transition-colors"
+                  />
+                  <div className="flex justify-end gap-2 pt-1">
+                    <button onClick={() => setShowContextInput(false)} className="text-[10px] font-semibold text-slate-500 px-2 py-1 hover:bg-slate-200 rounded">Cancel</button>
+                    <button 
+                      onClick={() => handleGenerateDraft(true)} 
+                      disabled={isDrafting}
+                      className="text-[10px] font-bold text-white bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded shadow-sm flex items-center gap-1 disabled:opacity-50"
+                    >
+                      {isDrafting ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                      Generate New Draft
+                    </button>
+                  </div>
+                </div>
+              )}
               <div className="space-y-3">
                 {followups.map((f: any) => (
                   <div key={f.id} className="p-3 bg-slate-50 border border-slate-100 rounded-lg space-y-2">

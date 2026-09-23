@@ -12,7 +12,7 @@ export async function POST(
   try {
     const { id } = await params;
     const body = await req.json();
-    const { contactFields } = body;
+    const { contactFields, customContext } = body;
 
     if (!contactFields) {
       return NextResponse.json(
@@ -72,7 +72,8 @@ export async function POST(
       contextDetails,
       settings.email_from_name || 'Sales Representative',
       exhibitionName,
-      companyResearch
+      companyResearch,
+      customContext
     );
 
     // Save draft into context_summary so it persists

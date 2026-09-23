@@ -17,7 +17,9 @@ export class FollowupDraftAgent {
     contextSummary: { problem?: string | null; needs?: string | null; action_items?: string[]; notable_quotes?: string[] },
     senderName: string = 'Sales Rep',
     exhibitionName?: string | null,
-    companyResearch?: string | null
+    companyResearch?: string | null,
+    customContext?: string | null,
+    isBlast?: boolean
   ): Promise<FollowupDraftOutput> {
     if (!apiKey) {
       throw new Error('Gemini API key is required but was not provided.');
@@ -60,6 +62,8 @@ export class FollowupDraftAgent {
       sender_name: senderName,
       exhibition: exhibitionName || 'Unknown Event',
       company_research: companyResearch || 'No research available',
+      custom_context: customContext || null,
+      is_blast_email: !!isBlast,
     }, null, 2);
 
     const prompt = `Generate the follow-up draft for the following lead:\n\n${payload}`;

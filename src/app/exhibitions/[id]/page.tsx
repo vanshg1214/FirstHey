@@ -26,6 +26,8 @@ export default function ExhibitionDetail({ params }: { params: Promise<{ id: str
   const [isSending, setIsSending] = useState(false);
   const [emailSubject, setEmailSubject] = useState('Nice meeting you at [Company]');
   const [emailBody, setEmailBody] = useState('Hi [Name],\n\nIt was great meeting you at our booth. I wanted to follow up and share some more information about our services.\n\nLet me know if you are available for a quick chat next week.\n\nBest,\n[Your Name]');
+  const [blastContext, setBlastContext] = useState('');
+  const [isGeneratingTemplate, setIsGeneratingTemplate] = useState(false);
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -63,6 +65,30 @@ export default function ExhibitionDetail({ params }: { params: Promise<{ id: str
   useEffect(() => {
     fetchData();
   }, [resolvedParams.id]);
+
+  const handleGenerateBlastTemplate = async () => {
+    if (!blastContext) return;
+    setIsGeneratingTemplate(true);
+    try {
+      const response = await fetch(`/api/exhibitions/${resolvedParams.id}/generate-blast-template`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ customContext: blastContext }),
+      });
+      const result = await response.json();
+      if (response.ok && result.draft) {
+        setEmailSubject(result.draft.subject || '');
+        setEmailBody(result.draft.emailBody || '');
+      } else {
+        addToast('error', 'Failed to generate template: ' + (result.error || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Template generation failed:', error);
+      addToast('error', 'Network error while generating template.');
+    } finally {
+      setIsGeneratingTemplate(false);
+    }
+  };
 
   const handleSendEmails = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -312,6 +338,30 @@ export default function ExhibitionDetail({ params }: { params: Promise<{ id: str
               </div>
             ) : (
               <form onSubmit={handleSendEmails} className="p-5 space-y-4">
+                <div className="bg-indigo-50/50 border border-indigo-100 rounded-lg p-3 space-y-2 mb-2">
+                  <label className="text-[10px] font-bold text-indigo-500 uppercase flex items-center gap-1">
+                    <Sparkles className="w-3 h-3" />
+                    AI Template Assistant
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="e.g. Tell them about our new product line"
+                      value={blastContext}
+                      onChange={e => setBlastContext(e.target.value)}
+                      className="flex-1 bg-white border border-indigo-200 rounded-lg px-3 py-2 text-xs outline-none focus:border-indigo-500 transition-colors"
+                    />
+                    <button 
+                      type="button"
+                      onClick={handleGenerateBlastTemplate} 
+                      disabled={isGeneratingTemplate || !blastContext}
+                      className="text-[10px] font-bold text-white bg-indigo-600 hover:bg-indigo-700 px-3 py-1 rounded-lg shadow-sm flex items-center justify-center min-w-[70px] disabled:opacity-50"
+                    >
+                      {isGeneratingTemplate ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Generate'}
+                    </button>
+                  </div>
+                </div>
+
                 <div>
                   <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Subject Line</label>
                   <input required type="text" value={emailSubject} onChange={e => setEmailSubject(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500 focus:bg-white transition-all font-medium text-slate-900 text-sm" />
