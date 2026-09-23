@@ -10,12 +10,20 @@ export async function GET(req: NextRequest) {
 
     const { data: profile, error } = await supabase
       .from('users')
-      .select('id, email, name, role, avatar_url')
+      .select('id, email, role')
       .eq('id', user.id)
       .single();
 
     if (error) throw error;
-    return NextResponse.json({ data: profile, error: null });
+
+    // Combine database user info with Auth metadata for the name
+    const enrichedProfile = {
+      ...profile,
+      name: user.user_metadata?.full_name || user.user_metadata?.name || '',
+      avatar_url: user.user_metadata?.avatar_url || ''
+    };
+
+    return NextResponse.json({ data: enrichedProfile, error: null });
   } catch (error: any) {
     return NextResponse.json({ data: null, error: { message: error.message } }, { status: 500 });
   }
@@ -29,18 +37,16 @@ export async function PUT(req: NextRequest) {
 
     const { name, password } = await req.json();
 
-    // Update name in users table
+    const updatePayload: any = {};
+    if (password) {
+      updatePayload.password = password;
+    }
     if (name !== undefined) {
-      const { error: dbError } = await supabaseAdmin
-        .from('users')
-        .update({ name })
-        .eq('id', user.id);
-      if (dbError) throw dbError;
+      updatePayload.data = { full_name: name, name: name }; // update metadata
     }
 
-    // Update password in Auth if provided
-    if (password) {
-      const { error: authError } = await supabase.auth.updateUser({ password });
+    if (Object.keys(updatePayload).length > 0) {
+      const { error: authError } = await supabase.auth.updateUser(updatePayload);
       if (authError) throw authError;
     }
 
@@ -50,3 +56,4 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ data: null, error: { message: error.message } }, { status: 500 });
   }
 }
+
