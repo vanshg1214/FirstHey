@@ -38,7 +38,16 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { error } = await supabaseAdmin.from('exhibitions').delete().eq('id', id);
+    const { data: userData } = await supabase.from('users').select('organization_id').eq('id', user.id).single();
+    if (!userData?.organization_id) {
+      return NextResponse.json({ error: 'No organization found' }, { status: 400 });
+    }
+
+    const { error } = await supabaseAdmin
+      .from('exhibitions')
+      .delete()
+      .eq('id', id)
+      .eq('organization_id', userData.organization_id);
 
     if (error) throw new Error(error.message);
 

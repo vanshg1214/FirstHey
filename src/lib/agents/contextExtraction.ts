@@ -50,19 +50,15 @@ export class ContextExtractionAgent {
     try {
       const result = await model.generateContent([prompt, audioPart]);
       const text = result.response.text();
-      const parsed = JSON.parse(text);
+      
+      // Strip markdown code blocks if Gemini returned them
+      const cleanText = text.replace(/```(?:json)?\n?/g, '').replace(/```\n?/g, '').trim();
+      
+      const parsed = JSON.parse(cleanText);
       return parsed as ContextExtractionOutput;
     } catch (error) {
       console.error('Error in Context Extraction Agent (Gemini):', error);
-      // Fallback
-      return {
-        transcript: 'Transcription failed due to an API error.',
-        problem: null,
-        needs: null,
-        action_items: [],
-        notable_quotes: [],
-        sentiment: 'neutral',
-      };
+      throw new Error(`Failed to extract context from audio: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 }

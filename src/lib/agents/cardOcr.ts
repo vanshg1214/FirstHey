@@ -72,20 +72,11 @@ export class CardOcrAgent {
         }
 
         console.error('Final error in Card OCR Agent (Gemini):', error);
-        return {
-          name: null,
-          company: null,
-          title: null,
-          email: null,
-          phone: null,
-          secondary_phone: null,
-          website: null,
-          confidence_score: 0.0,
-        };
+        throw new Error(`Failed to extract contact from business card: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     }
     
-    // Fallback if loop exits
-    return { name: null, company: null, title: null, email: null, phone: null, secondary_phone: null, website: null, confidence_score: 0.0 };
+    // Fallback if loop exits (should not happen, but for TS completeness)
+    throw new Error('Failed to extract contact from business card: max retries exceeded');
   }
 }

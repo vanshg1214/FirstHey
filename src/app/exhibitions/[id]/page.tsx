@@ -18,6 +18,9 @@ export default function ExhibitionDetail({ params }: { params: Promise<{ id: str
   
   // Email Blast Modal State
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
+  const [emailBlastStep, setEmailBlastStep] = useState<1 | 2>(1);
+  const [selectedLeadIds, setSelectedLeadIds] = useState<Set<string>>(new Set());
+  const [emailFilterStatus, setEmailFilterStatus] = useState<string>('all');
   const [isSending, setIsSending] = useState(false);
   const [emailSubject, setEmailSubject] = useState('Nice meeting you at [Company]');
   const [emailBody, setEmailBody] = useState('Hi [Name],\n\nIt was great meeting you at our booth. I wanted to follow up and share some more information about our services.\n\nLet me know if you are available for a quick chat next week.\n\nBest,\n[Your Name]');
@@ -58,7 +61,11 @@ export default function ExhibitionDetail({ params }: { params: Promise<{ id: str
       const res = await fetch(`/api/exhibitions/${resolvedParams.id}/email-blast`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ subject: emailSubject, body: emailBody })
+        body: JSON.stringify({ 
+          subject: emailSubject, 
+          body: emailBody, 
+          leadIds: Array.from(selectedLeadIds) 
+        })
       });
       
       const result = await res.json();
@@ -76,6 +83,28 @@ export default function ExhibitionDetail({ params }: { params: Promise<{ id: str
     } finally {
       setIsSending(false);
     }
+  };
+
+  const eligibleLeads = leads.filter(l => {
+    const hasEmail = Boolean(l.email || l.contact_fields?.email);
+    if (!hasEmail) return false;
+    if (emailFilterStatus !== 'all' && l.status !== emailFilterStatus) return false;
+    return true;
+  });
+
+  const toggleSelectAll = () => {
+    if (selectedLeadIds.size === eligibleLeads.length && eligibleLeads.length > 0) {
+      setSelectedLeadIds(new Set());
+    } else {
+      setSelectedLeadIds(new Set(eligibleLeads.map(l => l.id)));
+    }
+  };
+
+  const toggleLeadSelection = (id: string) => {
+    const next = new Set(selectedLeadIds);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setSelectedLeadIds(next);
   };
 
   const uncontactedCount = leads.filter(l => l.status !== 'contacted' && (l.email || l.contact_fields?.email)).length;
@@ -109,7 +138,12 @@ export default function ExhibitionDetail({ params }: { params: Promise<{ id: str
               Capture Lead Here
             </Link>
             <button 
-              onClick={() => setIsEmailModalOpen(true)}
+              onClick={() => {
+                setIsEmailModalOpen(true);
+                setEmailBlastStep(1);
+                setSelectedLeadIds(new Set());
+                setEmailFilterStatus('all');
+              }}
               className="py-2 px-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-md shadow-blue-600/20"
             >
               <Mail className="w-3.5 h-3.5" />
@@ -179,35 +213,104 @@ export default function ExhibitionDetail({ params }: { params: Promise<{ id: str
             <div className="p-5 border-b border-slate-100 flex justify-between items-center">
               <div>
                 <h2 className="text-lg font-bold text-slate-900">Send Email Blast</h2>
-                <p className="text-xs text-slate-500 mt-1">This will send an email to {uncontactedCount} uncontacted leads.</p>
+                <p className="text-xs text-slate-500 mt-1">
+                  {emailBlastStep === 1 ? 'Step 1: Select leads to email' : `Step 2: Compose email for ${selectedLeadIds.size} leads`}
+                </p>
               </div>
             </div>
-            <form onSubmit={handleSendEmails} className="p-5 space-y-4">
-              
-              {uncontactedCount === 0 && (
-                <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg text-orange-700 text-xs font-medium">
-                  There are no uncontacted leads with valid email addresses in this exhibition.
+            
+            {emailBlastStep === 1 ? (
+              <div className="p-5 space-y-4">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <input 
+                      type="checkbox" 
+                      id="selectAll"
+                      checked={eligibleLeads.length > 0 && selectedLeadIds.size === eligibleLeads.length}
+                      onChange={toggleSelectAll}
+                      className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <label htmlFor="selectAll" className="text-sm font-medium text-slate-700">Select All</label>
+                  </div>
+                  <select 
+                    value={emailFilterStatus}
+                    onChange={(e) => setEmailFilterStatus(e.target.value)}
+                    className="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 outline-none focus:border-blue-500"
+                  >
+                    <option value="all">All Statuses</option>
+                    <option value="new">New</option>
+                    <option value="qualified">Qualified</option>
+                    <option value="contacted">Contacted</option>
+                  </select>
                 </div>
-              )}
-
-              <div>
-                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Subject Line</label>
-                <input required type="text" value={emailSubject} onChange={e => setEmailSubject(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500 focus:bg-white transition-all font-medium text-slate-900 text-sm" />
+                
+                <div className="max-h-64 overflow-y-auto border border-slate-200 rounded-xl">
+                  {eligibleLeads.length === 0 ? (
+                    <div className="p-4 text-center text-sm text-slate-500">No leads match this filter.</div>
+                  ) : (
+                    <table className="w-full text-sm text-left">
+                      <thead className="bg-slate-50 sticky top-0">
+                        <tr>
+                          <th className="px-4 py-2 font-semibold text-slate-600 text-xs">Select</th>
+                          <th className="px-4 py-2 font-semibold text-slate-600 text-xs">Name</th>
+                          <th className="px-4 py-2 font-semibold text-slate-600 text-xs">Email</th>
+                          <th className="px-4 py-2 font-semibold text-slate-600 text-xs">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {eligibleLeads.map(l => (
+                          <tr key={l.id} className="hover:bg-slate-50 transition-colors">
+                            <td className="px-4 py-2">
+                              <input 
+                                type="checkbox"
+                                checked={selectedLeadIds.has(l.id)}
+                                onChange={() => toggleLeadSelection(l.id)}
+                                className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                              />
+                            </td>
+                            <td className="px-4 py-2 font-medium text-slate-900">{l.name || l.contact_fields?.name || '-'}</td>
+                            <td className="px-4 py-2 text-slate-500 text-xs">{l.email || l.contact_fields?.email || '-'}</td>
+                            <td className="px-4 py-2"><span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 uppercase font-bold">{l.status}</span></td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+                
+                <div className="pt-3 flex gap-2">
+                  <button type="button" onClick={() => setIsEmailModalOpen(false)} className="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg transition-colors text-sm">Cancel</button>
+                  <button 
+                    type="button" 
+                    onClick={() => setEmailBlastStep(2)} 
+                    disabled={selectedLeadIds.size === 0} 
+                    className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold rounded-lg transition-colors shadow-lg flex items-center justify-center gap-1.5 text-sm"
+                  >
+                    Next ({selectedLeadIds.size} Selected)
+                  </button>
+                </div>
               </div>
-              
-              <div>
-                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Email Body (Use [Name] and [Company] tags)</label>
-                <textarea required value={emailBody} onChange={e => setEmailBody(e.target.value)} rows={6} className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500 focus:bg-white transition-all font-medium text-slate-700 leading-relaxed text-sm"></textarea>
-              </div>
-              
-              <div className="pt-3 flex gap-2">
-                <button type="button" onClick={() => setIsEmailModalOpen(false)} className="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg transition-colors text-sm">Cancel</button>
-                <button type="submit" disabled={isSending || uncontactedCount === 0} className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold rounded-lg transition-colors shadow-lg flex items-center justify-center gap-1.5 text-sm">
-                  {isSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                  {isSending ? 'Sending...' : `Send ${uncontactedCount} Emails`}
-                </button>
-              </div>
-            </form>
+            ) : (
+              <form onSubmit={handleSendEmails} className="p-5 space-y-4">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Subject Line</label>
+                  <input required type="text" value={emailSubject} onChange={e => setEmailSubject(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500 focus:bg-white transition-all font-medium text-slate-900 text-sm" />
+                </div>
+                
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Email Body (Use [Name] and [Company] tags)</label>
+                  <textarea required value={emailBody} onChange={e => setEmailBody(e.target.value)} rows={6} className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500 focus:bg-white transition-all font-medium text-slate-700 leading-relaxed text-sm"></textarea>
+                </div>
+                
+                <div className="pt-3 flex gap-2">
+                  <button type="button" onClick={() => setEmailBlastStep(1)} className="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg transition-colors text-sm">Back</button>
+                  <button type="submit" disabled={isSending} className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold rounded-lg transition-colors shadow-lg flex items-center justify-center gap-1.5 text-sm">
+                    {isSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                    {isSending ? 'Sending...' : `Send ${selectedLeadIds.size} Emails`}
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}

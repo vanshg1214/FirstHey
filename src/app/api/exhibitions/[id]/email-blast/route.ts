@@ -9,10 +9,10 @@ export const dynamic = 'force-dynamic';
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    const { subject, body } = await req.json();
+    const { subject, body, leadIds } = await req.json();
     
-    if (!subject || !body) {
-      return NextResponse.json({ error: 'Subject and body are required' }, { status: 400 });
+    if (!subject || !body || !leadIds || !Array.isArray(leadIds) || leadIds.length === 0) {
+      return NextResponse.json({ error: 'Subject, body, and an array of selected leadIds are required' }, { status: 400 });
     }
 
     const supabase = await createClient();
@@ -25,31 +25,18 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const { data: userData } = await supabase.from('users').select('organization_id').eq('id', user.id).single();
     if (!userData?.organization_id) throw new Error('Organization not found');
 
-    // Get leads for this exhibition that have emails and haven't been contacted yet
-    const { data: leads, error } = await supabaseAdmin
+    // Get specific leads selected by the user
+    const { data: allLeads, error } = await supabaseAdmin
       .from('leads')
       .select('*')
+      .in('id', leadIds)
       .eq('exhibition_id', id)
-      .eq('organization_id', userData.organization_id)
-      .neq('status', 'contacted')
-      .not('email', 'is', null);
+      .eq('organization_id', userData.organization_id);
 
     if (error) throw new Error(error.message);
-    
-    // Also check contact_fields for email if email column is null (legacy data)
-    const { data: legacyLeads } = await supabaseAdmin
-      .from('leads')
-      .select('*')
-      .eq('exhibition_id', id)
-      .eq('organization_id', userData.organization_id)
-      .neq('status', 'contacted')
-      .is('email', null)
-      .not('contact_fields->email', 'is', null);
 
-    const allLeads = [...(leads || []), ...(legacyLeads || [])];
-
-    if (allLeads.length === 0) {
-      return NextResponse.json({ message: 'No eligible uncontacted leads found with an email address.' });
+    if (!allLeads || allLeads.length === 0) {
+      return NextResponse.json({ message: 'No eligible leads found for the selected IDs.' });
     }
 
     // Initialize Email Service credentials
@@ -62,42 +49,47 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     
     let sentCount = 0;
     const failedLeads: string[] = [];
+    const BATCH_SIZE = 10;
 
-    // Send emails in a loop
-    for (const lead of allLeads) {
-      const contactFields = lead.contact_fields || {};
-      const targetEmail = lead.email || contactFields.email;
-      const targetName = lead.name || contactFields.name || 'there';
+    // Send emails in parallel batches to avoid serverless timeouts
+    for (let i = 0; i < allLeads.length; i += BATCH_SIZE) {
+      const batch = allLeads.slice(i, i + BATCH_SIZE);
       
-      if (!targetEmail) continue;
-
-      // Personalize simple merge tags
-      const personalizedBody = body
-        .replace(/\[Name\]/g, targetName)
-        .replace(/\[Company\]/g, lead.company || contactFields.company || 'your company');
+      await Promise.allSettled(batch.map(async (lead) => {
+        const contactFields = lead.contact_fields || {};
+        const targetEmail = lead.email || contactFields.email;
+        const targetName = lead.name || contactFields.name || 'there';
         
-      const personalizedSubject = subject
-        .replace(/\[Name\]/g, targetName)
-        .replace(/\[Company\]/g, lead.company || contactFields.company || 'your company');
+        if (!targetEmail) return;
 
-      try {
-        await EmailService.sendEmail(
-          emailCreds,
-          targetEmail,
-          personalizedSubject,
-          personalizedBody,
-          lead.id,
-          undefined,
-          process.env.NEXT_PUBLIC_APP_URL
-        );
+        // Personalize simple merge tags
+        const personalizedBody = body
+          .replace(/\[Name\]/g, targetName)
+          .replace(/\[Company\]/g, lead.company || contactFields.company || 'your company');
+          
+        const personalizedSubject = subject
+          .replace(/\[Name\]/g, targetName)
+          .replace(/\[Company\]/g, lead.company || contactFields.company || 'your company');
 
-        // Mark as contacted
-        await supabaseAdmin.from('leads').update({ status: 'contacted' }).eq('id', lead.id);
-        sentCount++;
-      } catch (err: any) {
-        console.error(`Failed to send email to ${targetEmail}:`, err);
-        failedLeads.push(lead.id);
-      }
+        try {
+          await EmailService.sendEmail(
+            emailCreds,
+            targetEmail,
+            personalizedSubject,
+            personalizedBody,
+            lead.id,
+            undefined,
+            process.env.NEXT_PUBLIC_APP_URL
+          );
+
+          // Mark as contacted
+          await supabaseAdmin.from('leads').update({ status: 'contacted' }).eq('id', lead.id);
+          sentCount++;
+        } catch (err: any) {
+          console.error(`Failed to send email to ${targetEmail}:`, err);
+          failedLeads.push(lead.id);
+        }
+      }));
     }
 
     return NextResponse.json({ 

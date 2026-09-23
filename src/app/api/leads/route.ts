@@ -98,7 +98,23 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: 'Lead ID is required' }, { status: 400 });
     }
 
-    const { data, error } = await supabaseAdmin.from('leads').update(updateFields).eq('id', id).select().single();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { data: userData } = await supabase.from('users').select('organization_id').eq('id', user.id).single();
+    if (!userData?.organization_id) {
+      return NextResponse.json({ error: 'No organization found' }, { status: 400 });
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from('leads')
+      .update(updateFields)
+      .eq('id', id)
+      .eq('organization_id', userData.organization_id)
+      .select()
+      .single();
 
     if (error) throw new Error(error.message);
 
@@ -119,9 +135,23 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: 'Lead IDs array is required' }, { status: 400 });
     }
 
-    // Use admin client to bypass RLS and ensure cascade deletions work properly
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { data: userData } = await supabase.from('users').select('organization_id').eq('id', user.id).single();
+    if (!userData?.organization_id) {
+      return NextResponse.json({ error: 'No organization found' }, { status: 400 });
+    }
+
+    // Use admin client to bypass RLS and ensure cascade deletions work properly, but constrain by organization_id
     const { supabaseAdmin } = await import('@/lib/supabase');
-    const { error } = await supabaseAdmin.from('leads').delete().in('id', ids);
+    const { error } = await supabaseAdmin
+      .from('leads')
+      .delete()
+      .in('id', ids)
+      .eq('organization_id', userData.organization_id);
 
     if (error) throw new Error(error.message);
 
