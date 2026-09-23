@@ -761,7 +761,7 @@ Does this make sense for your sales process? ✨`;
             <div className="w-full">
               {contact.email ? (
                 <button
-                  onClick={handleGenerateDraft}
+                  onClick={() => handleGenerateDraft()}
                   disabled={isDrafting}
                   className="w-full py-3.5 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm shadow-lg transition-all flex items-center justify-center gap-2 disabled:bg-slate-800 disabled:text-slate-400 disabled:cursor-not-allowed hover:scale-[1.01] active:scale-[0.98]"
                 >
