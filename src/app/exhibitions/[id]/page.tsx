@@ -3,7 +3,7 @@
 import React, { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Users, Mail, Loader2, Calendar, MapPin, Send, Plus, Sparkles } from 'lucide-react';
+import { ArrowLeft, Users, Mail, Loader2, Calendar, MapPin, Send, Plus, Sparkles, UserPlus } from 'lucide-react';
 import { useToast } from '@/components/Toast';
 import LeadList from '@/components/LeadList';
 import { getOrganizationSettings } from '@/lib/actions/settings';
@@ -15,6 +15,7 @@ export default function ExhibitionDetail({ params }: { params: Promise<{ id: str
   
   const [exhibition, setExhibition] = useState<any>(null);
   const [leads, setLeads] = useState<any[]>([]);
+  const [allLeads, setAllLeads] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isEmailConfigured, setIsEmailConfigured] = useState(false);
   
@@ -28,6 +29,37 @@ export default function ExhibitionDetail({ params }: { params: Promise<{ id: str
   const [emailBody, setEmailBody] = useState('Hi [Name],\n\nIt was great meeting you at our booth. I wanted to follow up and share some more information about our services.\n\nLet me know if you are available for a quick chat next week.\n\nBest,\n[Your Name]');
   const [blastContext, setBlastContext] = useState('');
   const [isGeneratingTemplate, setIsGeneratingTemplate] = useState(false);
+
+  // Add Leads Modal State
+  const [isAddLeadsModalOpen, setIsAddLeadsModalOpen] = useState(false);
+  const [selectedAddLeadIds, setSelectedAddLeadIds] = useState<Set<string>>(new Set());
+  const [isAddingLeads, setIsAddingLeads] = useState(false);
+
+  const availableLeadsToAdd = allLeads.filter(l => l.exhibition_id !== resolvedParams.id);
+
+  const handleAddLeads = async () => {
+    if (selectedAddLeadIds.size === 0) return;
+    setIsAddingLeads(true);
+    try {
+      const res = await fetch(`/api/exhibitions/${resolvedParams.id}/add-leads`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          leadIds: Array.from(selectedAddLeadIds),
+          exhibitionName: exhibition?.name || null
+        })
+      });
+      if (!res.ok) throw new Error('Failed to add leads');
+      addToast('success', `Added ${selectedAddLeadIds.size} lead(s) to exhibition`);
+      setIsAddLeadsModalOpen(false);
+      setSelectedAddLeadIds(new Set());
+      fetchData(); // Refresh list
+    } catch (err: any) {
+      addToast('error', err.message);
+    } finally {
+      setIsAddingLeads(false);
+    }
+  };
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -45,6 +77,7 @@ export default function ExhibitionDetail({ params }: { params: Promise<{ id: str
       if (!leadsRes.ok) throw new Error('Failed to load leads');
       const { data: leadsData } = await leadsRes.json();
       
+      setAllLeads(leadsData || []);
       const exLeads = (leadsData || []).filter((l: any) => l.exhibition_id === resolvedParams.id);
       setLeads(exLeads);
 
@@ -175,6 +208,16 @@ export default function ExhibitionDetail({ params }: { params: Promise<{ id: str
             </Link>
             <button 
               onClick={() => {
+                setSelectedAddLeadIds(new Set());
+                setIsAddLeadsModalOpen(true);
+              }}
+              className="py-2 px-3 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 font-bold text-xs flex items-center gap-1.5 transition-all"
+            >
+              <UserPlus className="w-3.5 h-3.5" />
+              Add Existing Lead
+            </button>
+            <button 
+              onClick={() => {
                 setIsEmailModalOpen(true);
                 setEmailBlastStep(1);
                 setSelectedLeadIds(new Set());
@@ -241,6 +284,87 @@ export default function ExhibitionDetail({ params }: { params: Promise<{ id: str
           )}
         </div>
       </main>
+
+      {/* Add Existing Leads Modal */}
+      {isAddLeadsModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="p-5 border-b border-slate-100 flex justify-between items-center">
+              <div>
+                <h2 className="text-lg font-bold text-slate-900">Add Existing Leads</h2>
+                <p className="text-xs text-slate-500 mt-1">Select leads to assign to {exhibition.name}</p>
+              </div>
+            </div>
+            
+            <div className="p-5 bg-slate-50/50">
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm max-h-[400px] overflow-y-auto">
+                {availableLeadsToAdd.length === 0 ? (
+                  <div className="p-8 text-center text-slate-500 text-sm">
+                    No available leads to add. All leads are already in this exhibition.
+                  </div>
+                ) : (
+                  <div className="divide-y divide-slate-100">
+                    <div className="p-3 bg-slate-50 flex justify-between items-center text-xs font-bold text-slate-500 uppercase sticky top-0 bg-slate-50/90 backdrop-blur-sm border-b border-slate-100">
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="checkbox"
+                          checked={selectedAddLeadIds.size > 0 && selectedAddLeadIds.size === availableLeadsToAdd.length}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedAddLeadIds(new Set(availableLeadsToAdd.map(l => l.id)));
+                            } else {
+                              setSelectedAddLeadIds(new Set());
+                            }
+                          }}
+                          className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span>Select All</span>
+                      </div>
+                      <span>{availableLeadsToAdd.length} Available</span>
+                    </div>
+                    {availableLeadsToAdd.map(lead => (
+                      <label key={lead.id} className="flex items-center gap-3 p-3 hover:bg-slate-50 cursor-pointer transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={selectedAddLeadIds.has(lead.id)}
+                          onChange={(e) => {
+                            const newSet = new Set(selectedAddLeadIds);
+                            if (e.target.checked) newSet.add(lead.id);
+                            else newSet.delete(lead.id);
+                            setSelectedAddLeadIds(newSet);
+                          }}
+                          className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-bold text-slate-900 truncate">{lead.contact_fields?.name || lead.name || 'Unknown'}</p>
+                          <p className="text-xs text-slate-500 truncate">{lead.contact_fields?.company || lead.company || 'No Company'}</p>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            <div className="p-5 border-t border-slate-100 flex justify-end gap-3 bg-white">
+              <button
+                onClick={() => setIsAddLeadsModalOpen(false)}
+                className="px-4 py-2 text-sm font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddLeads}
+                disabled={isAddingLeads || selectedAddLeadIds.size === 0}
+                className="px-6 py-2 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white text-sm font-bold rounded-xl transition-all flex items-center gap-2"
+              >
+                {isAddingLeads && <Loader2 className="w-4 h-4 animate-spin" />}
+                Add {selectedAddLeadIds.size > 0 ? selectedAddLeadIds.size : ''} Leads
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Email Modal */}
       {isEmailModalOpen && (
