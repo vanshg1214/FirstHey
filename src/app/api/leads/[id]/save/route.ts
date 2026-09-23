@@ -12,6 +12,30 @@ export async function POST(
     const { id } = await params;
     const body = await req.json();
     const { contactFields, cardImage, confidence, campaignId, exhibition, stall } = body;
+
+    // Authenticate user
+    const supabaseUser = await createClient();
+    const { data: { user } } = await supabaseUser.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ data: null, error: { code: 'UNAUTHORIZED', message: 'Unauthorized' } }, { status: 401 });
+    }
+    const { data: userData } = await supabaseUser.from('users').select('organization_id').eq('id', user.id).single();
+    if (!userData?.organization_id) {
+      return NextResponse.json({ data: null, error: { code: 'NO_ORG', message: 'No organization found' } }, { status: 400 });
+    }
+
+    // Verify the lead belongs to this user's org before modifying
+    const { data: existingLead, error: leadCheckError } = await supabaseAdmin
+      .from('leads')
+      .select('id')
+      .eq('id', id)
+      .eq('organization_id', userData.organization_id)
+      .single();
+    
+    if (leadCheckError || !existingLead) {
+      return NextResponse.json({ data: null, error: { code: 'NOT_FOUND', message: 'Lead not found or access denied' } }, { status: 403 });
+    }
+
     // Use admin client for all database operations to bypass RLS
     const supabase = supabaseAdmin;
 

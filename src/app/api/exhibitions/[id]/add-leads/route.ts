@@ -22,13 +22,34 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const { data: userData } = await supabase.from('users').select('organization_id').eq('id', user.id).single();
+    if (!userData?.organization_id) {
+      return NextResponse.json({ error: 'No organization found' }, { status: 400 });
+    }
+
+    const orgId = userData.organization_id;
+
+    // Verify the exhibition belongs to this org
+    const { data: exhibition, error: exError } = await supabaseAdmin
+      .from('exhibitions')
+      .select('id')
+      .eq('id', id)
+      .eq('organization_id', orgId)
+      .single();
+
+    if (exError || !exhibition) {
+      return NextResponse.json({ error: 'Exhibition not found or access denied' }, { status: 403 });
+    }
+
+    // Only update leads that belong to this org
     const { error } = await supabaseAdmin
       .from('leads')
       .update({ 
         exhibition_id: id, 
         exhibition: exhibitionName 
       })
-      .in('id', leadIds);
+      .in('id', leadIds)
+      .eq('organization_id', orgId); // Critical: prevent cross-org assignment
 
     if (error) {
       throw new Error(`Database error updating leads: ${error.message}`);

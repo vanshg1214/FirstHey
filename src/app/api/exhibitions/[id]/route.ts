@@ -14,10 +14,16 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const { data: userData } = await supabase.from('users').select('organization_id').eq('id', user.id).single();
+    if (!userData?.organization_id) {
+      return NextResponse.json({ error: 'No organization found' }, { status: 400 });
+    }
+
     const { data: exhibition, error } = await supabase
       .from('exhibitions')
       .select('*')
       .eq('id', id)
+      .eq('organization_id', userData.organization_id)
       .single();
 
     if (error) throw new Error(error.message);

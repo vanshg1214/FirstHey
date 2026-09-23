@@ -1,5 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
+import { createClient } from '@/utils/supabase/server';
+
+async function getAuth(): Promise<{ userId: string; orgId: string } | null> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+  const { data: userData } = await supabase.from('users').select('organization_id').eq('id', user.id).single();
+  if (!userData?.organization_id) return null;
+  return { userId: user.id, orgId: userData.organization_id };
+}
 
 export async function DELETE(
   req: NextRequest,
@@ -7,32 +17,27 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
+    const auth = await getAuth();
+    if (!auth) {
+      return NextResponse.json({ data: null, error: { code: 'UNAUTHORIZED', message: 'Unauthorized' } }, { status: 401 });
+    }
 
-    // PostgreSQL ON DELETE CASCADE will automatically clean up associated recordings, 
-    // card scans, followups, and crm sync logs.
+    // Scoped to org - prevents deleting another user's lead
     const { error } = await supabaseAdmin
       .from('leads')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .eq('organization_id', auth.orgId);
 
     if (error) {
       throw new Error(`Database error deleting lead: ${error.message}`);
     }
 
-    return NextResponse.json({
-      data: { success: true },
-      error: null,
-    });
+    return NextResponse.json({ data: { success: true }, error: null });
   } catch (error: any) {
     console.error('Error deleting lead:', error);
     return NextResponse.json(
-      {
-        data: null,
-        error: {
-          code: 'DELETE_FAILED',
-          message: error.message || 'An error occurred during deletion.',
-        },
-      },
+      { data: null, error: { code: 'DELETE_FAILED', message: error.message || 'An error occurred during deletion.' } },
       { status: 500 }
     );
   }
@@ -44,9 +49,13 @@ export async function PATCH(
 ) {
   try {
     const { id } = await params;
+    const auth = await getAuth();
+    if (!auth) {
+      return NextResponse.json({ data: null, error: { code: 'UNAUTHORIZED', message: 'Unauthorized' } }, { status: 401 });
+    }
+
     const body = await req.json();
 
-    // Allow patching safe fields: notes, status, etc.
     const allowedFields: Record<string, any> = {};
     if (body.notes !== undefined) allowedFields.notes = body.notes;
     if (body.status !== undefined) allowedFields.status = body.status;
@@ -58,12 +67,12 @@ export async function PATCH(
       return NextResponse.json({ data: null, error: { code: 'NO_FIELDS', message: 'No valid fields provided to update.' } }, { status: 400 });
     }
 
-
-
+    // Scoped to org - prevents patching another user's lead
     const { error } = await supabaseAdmin
       .from('leads')
       .update(allowedFields)
-      .eq('id', id);
+      .eq('id', id)
+      .eq('organization_id', auth.orgId);
 
     if (error) {
       throw new Error(`Database error updating lead: ${error.message}`);
@@ -78,4 +87,3 @@ export async function PATCH(
     );
   }
 }
-
