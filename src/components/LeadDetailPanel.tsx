@@ -348,16 +348,33 @@ export default function LeadDetailPanel({ lead, onClose, onRefresh }: LeadDetail
     if (!contact.phone) return;
     const phone = contact.phone.replace(/[^0-9+]/g, '');
     
-    // Check if we have an AI-generated whatsapp body
-    const firstFollowup = followups.find((f: any) => f.sequence_position === 1);
-    let messageBody = `Hi ${contact.name || 'there'}, I am following up from our exhibition conversation. Let's connect!`;
+    // Use the exact 4-5 line structure from their preferred template
+    let messageBody = `Hi ${contact.name || 'there'},
+
+Good meeting you at the exhibition today.
+
+Just wanted to send you the VPV demo I showed you on the iPad, while it's still fresh.
+
+The idea is simple: after you generate leads, VPV helps your sales team give buyers a better look at your factory and build confidence.
+
+Does this make sense for your sales process? ✨`;
     
-    // Since we don't have whatsapp_body in the DB schema yet, we might use the email draft if available, 
-    // or fallback. For now, just generate a generic clean message.
-    if (emailDraft && emailDraft.whatsappBody) {
+    // Use AI draft if available
+    if (lead.context_summary?.latest_draft?.whatsappBody) {
+      messageBody = lead.context_summary.latest_draft.whatsappBody;
+    } else if (emailDraft && emailDraft.whatsappBody) {
       messageBody = emailDraft.whatsappBody;
     }
     
+    // Log the WhatsApp send in the background
+    fetch(`/api/leads/${lead.id}/log-whatsapp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ whatsappBody: messageBody }),
+    }).then(() => {
+      onRefresh(); // Refresh to show it in the feed
+    }).catch(console.error);
+
     const message = encodeURIComponent(messageBody);
     window.open(`https://wa.me/${phone}?text=${message}`, '_blank');
   };
