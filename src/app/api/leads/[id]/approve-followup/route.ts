@@ -4,6 +4,7 @@ import { supabaseAdmin } from '@/lib/supabase';
 import { EmailService } from '@/lib/services/email';
 import { SettingsService } from '@/lib/services/settings';
 import { getCurrentUserOrgId } from '@/lib/auth';
+import { SequenceService } from '@/lib/services/sequence';
 
 export async function POST(
   req: NextRequest,
@@ -50,6 +51,17 @@ export async function POST(
         );
       }
 
+      // Next touch number = highest email position so far + 1 (WhatsApp rows don't count)
+      const { data: lastEmail } = await supabase
+        .from('followups')
+        .select('sequence_position')
+        .eq('lead_id', id)
+        .eq('channel', 'email')
+        .order('sequence_position', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const touchPosition = (lastEmail?.sequence_position || 0) + 1;
+
       // Send directly via Nodemailer
       const emailSent = await EmailService.sendEmail(
         { 
@@ -61,7 +73,8 @@ export async function POST(
         toEmail,
         subject,
         emailBody,
-        id // Used for tracking pixel
+        id, // Used for tracking pixel and the unsubscribe link
+        touchPosition
       );
       
       if (emailSent) {
@@ -72,9 +85,9 @@ export async function POST(
           .eq('id', id);
 
         // Insert into followups table to log it
-        await supabase.from('followups').insert({
+        const { error: logError } = await supabase.from('followups').insert({
           lead_id: id,
-          sequence_position: 1,
+          sequence_position: touchPosition,
           channel: 'email',
           status: 'sent',
           subject: subject,
@@ -82,6 +95,18 @@ export async function POST(
           scheduled_for: new Date().toISOString(),
           sent_at: new Date().toISOString(),
         });
+        if (logError) {
+          console.error('Email was sent but logging to followups failed:', logError.message);
+        } else {
+          // Email N is out, so the AI writes email N+1 now and queues it for the next cycle.
+          // A failure here must not turn a successful send into an error for the user.
+          try {
+            const next = await SequenceService.scheduleNext(id);
+            if (!next.scheduled) console.log(`[sequence] next email not scheduled for ${id}: ${next.reason}`);
+          } catch (e: any) {
+            console.error('[sequence] scheduleNext failed after send:', e.message);
+          }
+        }
       } else {
         await supabase
           .from('leads')

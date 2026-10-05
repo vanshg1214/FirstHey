@@ -3,7 +3,7 @@
 import React, { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Users, Mail, Loader2, Calendar, MapPin, Send, Plus, Sparkles, UserPlus } from 'lucide-react';
+import { ArrowLeft, Users, Mail, Loader2, Calendar, MapPin, Send, Plus, Sparkles, UserPlus, Printer } from 'lucide-react';
 import { useToast } from '@/components/Toast';
 import LeadList from '@/components/LeadList';
 import { getOrganizationSettings } from '@/lib/actions/settings';
@@ -35,7 +35,51 @@ export default function ExhibitionDetail({ params }: { params: Promise<{ id: str
   const [selectedAddLeadIds, setSelectedAddLeadIds] = useState<Set<string>>(new Set());
   const [isAddingLeads, setIsAddingLeads] = useState(false);
 
+  // Sticker/label export selection
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [isExportingLabels, setIsExportingLabels] = useState(false);
+
   const availableLeadsToAdd = allLeads.filter(l => l.exhibition_id !== resolvedParams.id);
+
+  const handleToggleSelection = (id: string) => {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+  };
+
+  const handleToggleAll = () => {
+    if (selectedIds.length === leads.length && leads.length > 0) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(leads.map(l => l.id));
+    }
+  };
+
+  const handleExportLabels = async () => {
+    if (selectedIds.length === 0) return;
+    setIsExportingLabels(true);
+    try {
+      const response = await fetch('/api/leads/export-labels', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ leadIds: selectedIds }),
+      });
+      if (!response.ok) {
+        const result = await response.json().catch(() => null);
+        throw new Error(result?.error || 'Failed to generate sticker sheet');
+      }
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `lead-labels-${new Date().toISOString().slice(0, 10)}.docx`;
+      a.click();
+      URL.revokeObjectURL(url);
+      addToast('success', `Generated sticker sheet for ${selectedIds.length} lead(s)`);
+    } catch (err: any) {
+      addToast('error', err.message || 'Failed to generate sticker sheet');
+    } finally {
+      setIsExportingLabels(false);
+    }
+  };
 
   const handleAddLeads = async () => {
     if (selectedAddLeadIds.size === 0) return;
@@ -270,7 +314,20 @@ export default function ExhibitionDetail({ params }: { params: Promise<{ id: str
 
         {/* Leads List */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden p-5">
-          <h2 className="text-base font-bold text-slate-900 mb-4">Captured Leads</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-base font-bold text-slate-900">Captured Leads</h2>
+            {selectedIds.length > 0 && (
+              <button
+                onClick={handleExportLabels}
+                disabled={isExportingLabels}
+                title="Print Stickers (.docx)"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-blue-50 border border-blue-200 text-blue-600 font-bold text-xs shadow-sm hover:bg-blue-100 transition-all disabled:opacity-50"
+              >
+                <Printer className="w-3.5 h-3.5" />
+                {isExportingLabels ? 'Generating...' : `Print Stickers (${selectedIds.length})`}
+              </button>
+            )}
+          </div>
           {leads.length === 0 ? (
             <div className="text-center py-12">
               <Users className="w-12 h-12 text-slate-300 mx-auto mb-3" />
@@ -280,7 +337,13 @@ export default function ExhibitionDetail({ params }: { params: Promise<{ id: str
               </Link>
             </div>
           ) : (
-            <LeadList leads={leads} onSelectLead={() => {}} />
+            <LeadList
+              leads={leads}
+              onSelectLead={() => {}}
+              selectedIds={selectedIds}
+              onToggleSelection={handleToggleSelection}
+              onToggleAll={handleToggleAll}
+            />
           )}
         </div>
       </main>

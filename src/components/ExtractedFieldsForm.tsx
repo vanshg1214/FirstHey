@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { User, Building, ShieldAlert, Award, Phone, Mail, Check } from 'lucide-react';
+import { User, Building, ShieldAlert, Award, Phone, Mail, Check, MapPin } from 'lucide-react';
 
 interface ExtractedFields {
   name: string | null;
@@ -10,6 +10,7 @@ interface ExtractedFields {
   email: string | null;
   phone: string | null;
   secondary_phone: string | null;
+  address?: string | null;
   confidence: number;
 }
 
@@ -35,7 +36,7 @@ export default function ExtractedFieldsForm({
     setFields({ ...initialFields });
   }, [initialFields]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFields((prev) => ({
       ...prev,
@@ -184,6 +185,23 @@ export default function ExtractedFieldsForm({
             value={fields.secondary_phone || ''}
             onChange={handleChange}
             className="w-full bg-white/50 border border-slate-200 focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder-zinc-600 transition-all outline-none shadow-inner"
+          />
+        </div>
+
+        {/* Address */}
+        <div className="space-y-1.5">
+          <label htmlFor="address" className="text-xs font-medium text-slate-500 flex items-center gap-1.5">
+            <MapPin className="w-3.5 h-3.5 text-slate-600" />
+            Address
+          </label>
+          <textarea
+            id="address"
+            name="address"
+            value={fields.address || ''}
+            onChange={handleChange}
+            rows={2}
+            placeholder="Office address, city, state, pincode..."
+            className="w-full bg-white/50 border border-slate-200 focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder-zinc-600 transition-all outline-none shadow-inner resize-none"
           />
         </div>
 

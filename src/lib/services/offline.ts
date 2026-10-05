@@ -9,6 +9,7 @@ export interface OfflineLead {
     title: string | null;
     email: string | null;
     phone: string | null;
+    address?: string | null;
   };
   audioBase64?: string | null;
   audioMimeType?: string | null;

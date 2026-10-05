@@ -67,19 +67,19 @@ export class EmailService {
 
     // Plain text version — always included. This is required for inbox delivery.
     // By sending ONLY plain text, we avoid all HTML-based spam filters.
-    const textBody = `${body}\n\n${fromName}`;
+    const finalAppUrl = appUrl || process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_PROJECT_PRODUCTION_URL ? 'https://' + process.env.VERCEL_PROJECT_PRODUCTION_URL : (process.env.VERCEL_URL ? 'https://' + process.env.VERCEL_URL : ''));
+    const unsubscribeUrl = leadId && finalAppUrl ? `${finalAppUrl}/api/unsubscribe/${leadId}` : '';
+
+    const textBody = `${body}\n\n${fromName}${unsubscribeUrl ? `\n\nTo stop receiving these emails: ${unsubscribeUrl}` : ''}`;
 
     // Build tracking pixel URL (only appended to HTML part)
     let pixelTag = '';
-    if (leadId) {
-      const finalAppUrl = appUrl || process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_PROJECT_PRODUCTION_URL ? 'https://' + process.env.VERCEL_PROJECT_PRODUCTION_URL : (process.env.VERCEL_URL ? 'https://' + process.env.VERCEL_URL : ''));
-      if (finalAppUrl) {
-        const trackingUrl = `${finalAppUrl}/api/leads/${leadId}/track-open${touchPosition ? `?touch=${touchPosition}` : ''}`;
-        pixelTag = `<img src="${trackingUrl}" width="0" height="0" alt="" style="display:none;" />`;
-      }
+    if (leadId && finalAppUrl) {
+      const trackingUrl = `${finalAppUrl}/api/leads/${leadId}/track-open${touchPosition ? `?touch=${touchPosition}` : ''}`;
+      pixelTag = `<img src="${trackingUrl}" width="0" height="0" alt="" style="display:none;" />`;
     }
 
-    const htmlBody = this.generateHtml(body, fromName, credentials.fromTitle || 'Export Marketing Strategist', pixelTag);
+    const htmlBody = this.generateHtml(body, fromName, credentials.fromTitle || 'Export Marketing Strategist', pixelTag, unsubscribeUrl);
 
     if (!transporter) {
       throw new Error('Failed to initialize email transporter.');
@@ -93,6 +93,12 @@ export class EmailService {
         // Send BOTH text and minimal HTML so tracking pixel works while mimicking personal email
         text: textBody,
         html: htmlBody,
+        headers: unsubscribeUrl
+          ? {
+              'List-Unsubscribe': `<${unsubscribeUrl}>`,
+              'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+            }
+          : undefined,
         attachments: attachments || [],
       });
 
@@ -102,7 +108,7 @@ export class EmailService {
     }
   }
 
-  public static generateHtml(body: string, fromName: string, fromTitle: string, pixelTag: string = ''): string {
+  public static generateHtml(body: string, fromName: string, fromTitle: string, pixelTag: string = '', unsubscribeUrl: string = ''): string {
     const safeBody = body
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
@@ -150,7 +156,9 @@ export class EmailService {
         <div class="text-secondary" style="font-size: 11px; color: #718096; text-transform: uppercase; letter-spacing: 1px; margin-top: 3px; font-weight: 600;">${fromTitle || 'Export Marketing Strategist'}</div>
       </div>
     </div>
-    
+
+    ${unsubscribeUrl ? `<div class="text-secondary" style="font-size: 11px; color: #a0aec0; margin-top: 10px;">Not interested? <a href="${unsubscribeUrl}" style="color: #a0aec0; text-decoration: underline;">Unsubscribe</a></div>` : ''}
+
   </div>
   ${pixelTag}
 </body>

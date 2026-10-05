@@ -17,7 +17,8 @@ import {
   Clock,
   Download,
   Trash2,
-  Plus
+  Plus,
+  Printer
 } from 'lucide-react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -36,16 +37,46 @@ export default function LeadsDashboard() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingLead, setEditingLead] = useState<any | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isExportingLabels, setIsExportingLabels] = useState(false);
   const { addToast } = useToast();
+
+  const handleExportLabels = async () => {
+    if (selectedIds.length === 0) return;
+    setIsExportingLabels(true);
+    try {
+      const response = await fetch('/api/leads/export-labels', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ leadIds: selectedIds }),
+      });
+      if (!response.ok) {
+        const result = await response.json().catch(() => null);
+        throw new Error(result?.error || 'Failed to generate sticker sheet');
+      }
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `lead-labels-${new Date().toISOString().slice(0, 10)}.docx`;
+      a.click();
+      URL.revokeObjectURL(url);
+      addToast('success', `Generated sticker sheet for ${selectedIds.length} lead(s)`);
+    } catch (err: any) {
+      addToast('error', err.message || 'Failed to generate sticker sheet');
+    } finally {
+      setIsExportingLabels(false);
+    }
+  };
 
   const exportToCSV = () => {
     if (filteredLeads.length === 0) return;
-    const headers = ['Name', 'Company', 'Title', 'Email', 'Phone', 'Exhibition', 'Stall', 'Status', 'Sentiment', 'Opens', 'Captured At'];
+    const headers = ['Name', 'Company', 'Title', 'Email', 'Phone', 'Address', 'Exhibition', 'Stall', 'Status', 'Sentiment', 'Opens', 'Captured At'];
     const rows = filteredLeads.map(lead => {
       const c = lead.contact_fields || {};
       const ctx = lead.context_summary || {};
       return [
         c.name || '', c.company || '', c.title || '', c.email || '', c.phone || '',
+        c.address || lead.address || '',
         lead.exhibition || '', lead.stall || '', lead.status || '',
         ctx.sentiment || '', ctx.open_count || 0,
         new Date(lead.created_at).toLocaleDateString(),
@@ -528,6 +559,17 @@ export default function LeadsDashboard() {
                 >
                   <Download className="w-4 h-4" />
                 </button>
+                {selectedIds.length > 0 && (
+                  <button
+                    onClick={handleExportLabels}
+                    disabled={isExportingLabels}
+                    title="Print Stickers (.docx)"
+                    className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-600 font-bold text-xs shadow-sm hover:bg-blue-100 transition-all disabled:opacity-50"
+                  >
+                    <Printer className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">{isExportingLabels ? 'Generating...' : `Print Stickers (${selectedIds.length})`}</span>
+                  </button>
+                )}
                 {selectedIds.length > 0 && (
                   <button
                     onClick={handleBulkDelete}

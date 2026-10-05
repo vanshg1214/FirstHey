@@ -17,6 +17,7 @@ export default function LeadFormModal({ isOpen, onClose, onSave, initialData }: 
     phone: '',
     company: '',
     title: '',
+    address: '',
     exhibition: '',
     stall: '',
     notes: '',
@@ -32,6 +33,7 @@ export default function LeadFormModal({ isOpen, onClose, onSave, initialData }: 
         phone: initialData.contact_fields?.phone || '',
         company: initialData.contact_fields?.company || '',
         title: initialData.contact_fields?.title || '',
+        address: initialData.contact_fields?.address || initialData.address || '',
         exhibition: initialData.exhibition || '',
         stall: initialData.stall || '',
         notes: initialData.notes || '',
@@ -43,6 +45,7 @@ export default function LeadFormModal({ isOpen, onClose, onSave, initialData }: 
         phone: '',
         company: '',
         title: '',
+        address: '',
         exhibition: '',
         stall: '',
         notes: '',
@@ -71,6 +74,7 @@ export default function LeadFormModal({ isOpen, onClose, onSave, initialData }: 
           phone: formData.phone,
           company: formData.company,
           title: formData.title,
+          address: formData.address,
         },
         exhibition: formData.exhibition,
         stall: formData.stall,
@@ -188,6 +192,18 @@ export default function LeadFormModal({ isOpen, onClose, onSave, initialData }: 
                   onChange={handleChange}
                   placeholder="Booth #402"
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
+                />
+              </div>
+
+              <div className="space-y-1.5 sm:col-span-2">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Address</label>
+                <textarea
+                  name="address"
+                  value={formData.address}
+                  onChange={handleChange}
+                  placeholder="Office address, city, state, pincode..."
+                  rows={2}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all resize-none"
                 />
               </div>
 

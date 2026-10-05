@@ -43,6 +43,7 @@ export async function updateSession(request: NextRequest) {
     request.nextUrl.pathname.startsWith('/api/health') ||
     request.nextUrl.pathname.startsWith('/api/cron') ||
     request.nextUrl.pathname.startsWith('/api/webhooks') ||
+    request.nextUrl.pathname.startsWith('/api/unsubscribe') ||
     request.nextUrl.pathname.includes('/track-open');
 
   if (!user && !isPublicRoute) {

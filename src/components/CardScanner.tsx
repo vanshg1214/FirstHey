@@ -10,6 +10,7 @@ interface CardScannerProps {
     title: string | null;
     email: string | null;
     phone: string | null;
+    address: string | null;
     confidence: number;
     image: string;
   }) => void;
@@ -119,6 +120,7 @@ export default function CardScanner({ onScanComplete, isProcessing: externalProc
         title: result.data.title,
         email: result.data.email,
         phone: result.data.phone,
+        address: result.data.address,
         confidence: typeof result.data.confidence_score === 'number' ? result.data.confidence_score : 100,
         image,
       });

@@ -27,6 +27,7 @@ import AudioPlayer from './AudioPlayer';
 import FollowupDraftEditor from './FollowupDraftEditor';
 
 import InsightsPanel from './InsightsPanel';
+import EmailPipeline from './EmailPipeline';
 
 interface LeadDetailPanelProps {
   lead: any;
@@ -692,6 +693,9 @@ Does this make sense for your sales process? ✨`;
             </div>
           )}
         </div>
+
+        {/* Email pipeline: capture -> draft -> sent -> opened -> replied */}
+        <EmailPipeline leadId={lead.id} refreshKey={`${lead.status}:${lead.open_count}:${lead.updated_at}`} />
 
         {/* 2. Follow-up Messages */}
         <div className="w-full space-y-3">

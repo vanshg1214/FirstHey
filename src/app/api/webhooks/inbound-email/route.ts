@@ -29,18 +29,23 @@ export async function POST(req: NextRequest) {
     }
 
     // 1. Find the lead by email
+    // Match on the sender address in either the email column or contact_fields JSON.
+    // (Previously this fetched only the first 100 leads, so replies from anyone else were
+    // ignored and their drip kept running.)
+    const senderEmail = String(from_email).trim().toLowerCase();
+    if (!/^[^\s,()"]+@[^\s,()"]+$/.test(senderEmail)) {
+      return NextResponse.json({ error: 'Invalid from_email' }, { status: 400 });
+    }
+
     const { data: lead, error: leadError } = await supabaseAdmin
       .from('leads')
-      .select('id, organization_id, contact_fields, context_summary, sequence_status')
-      // Note: We search the JSONB contact_fields for the email. This requires casting in Supabase,
-      // but for simplicity, we'll fetch leads and filter, or use a specific exact query if indexed.
-      // A more scalable way is storing 'email' as a top-level column, but for now we filter in JS.
-      // We will do a generic fetch for demo purposes.
-      .limit(100);
+      .select('id, organization_id, contact_fields, context_summary, sequence_status, email')
+      .or(`email.ilike.${senderEmail},contact_fields->>email.ilike.${senderEmail}`)
+      .limit(5);
 
     if (leadError) throw leadError;
 
-    const matchedLead = lead?.find(l => l.contact_fields?.email?.toLowerCase() === from_email.toLowerCase());
+    const matchedLead = lead?.[0];
 
     if (!matchedLead) {
       return NextResponse.json({ message: 'Lead not found for this email, ignoring.' }, { status: 200 });
@@ -52,7 +57,7 @@ export async function POST(req: NextRequest) {
       .from('followups')
       .update({ status: 'cancelled' })
       .eq('lead_id', matchedLead.id)
-      .eq('status', 'scheduled');
+      .in('status', ['queued', 'due']);
 
     await supabaseAdmin
       .from('leads')

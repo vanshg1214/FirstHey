@@ -64,6 +64,7 @@ export class LeadsRepository {
         phone: fields.phone || null,
         secondary_phone: fields.secondary_phone || null,
         website: fields.website || null,
+        address: fields.address || null,
         contact_fields: fields,
         status: status,
       })

@@ -7,6 +7,7 @@ Fields to extract:
 - title: The person's job title or designation (e.g., Director, Manager, Engineer)
 - email: The email address printed on the card
 - phone: The primary phone number or mobile number
+- address: The full postal/office address printed on the card (combine all address lines into one string, separated by commas)
 
 Rules:
 1. Extract ONLY what is legible on the card.

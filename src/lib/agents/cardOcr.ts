@@ -11,6 +11,7 @@ export const CardOcrOutputSchema = z.object({
   phone: z.string().nullable().describe('The primary contact phone number'),
   secondary_phone: z.string().nullable().describe('The secondary contact phone number or mobile, if present'),
   website: z.string().nullable().describe('The website URL'),
+  address: z.string().nullable().describe('The full postal/office address, combined into a single string'),
   confidence_score: z.number().min(0).max(100).describe('Estimated confidence in extraction accuracy (0-100)'),
 });
 
@@ -43,7 +44,7 @@ export class CardOcrAgent {
       },
     };
 
-    const prompt = `Extract the contact details from this business card image and return ONLY valid JSON with these exact keys: name, company, title, email, phone, secondary_phone, website, confidence_score. Use null for any field that is not visible on the card. If there are multiple phone numbers, put the primary one in 'phone' and the second one in 'secondary_phone'. IMPORTANT: For all phone numbers, if no country code is printed on the card, you MUST prepend '+91 '. If one is printed, use it. confidence_score should be a number from 0 to 100.`;
+    const prompt = `Extract the contact details from this business card image and return ONLY valid JSON with these exact keys: name, company, title, email, phone, secondary_phone, website, address, confidence_score. Use null for any field that is not visible on the card. If there are multiple phone numbers, put the primary one in 'phone' and the second one in 'secondary_phone'. IMPORTANT: For all phone numbers, if no country code is printed on the card, you MUST prepend '+91 '. If one is printed, use it. For 'address', combine every address line printed on the card (street, area, city, state, pincode) into a single comma-separated string. confidence_score should be a number from 0 to 100.`;
 
     let attempts = 0;
     const maxAttempts = 3;

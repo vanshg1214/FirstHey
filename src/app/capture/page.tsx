@@ -20,6 +20,7 @@ interface ExtractedContact {
   email: string | null;
   phone: string | null;
   secondary_phone: string | null;
+  address?: string | null;
   confidence: number;
   image?: string;
 }
@@ -247,7 +248,7 @@ function CaptureDashboardContent() {
         } catch (e) {
           console.warn('Batch OCR extraction error', e);
         }
-        results.push({ name: '', company: '', title: '', email: '', phone: '', secondary_phone: '', confidence: 0, image: base64 });
+        results.push({ name: '', company: '', title: '', email: '', phone: '', secondary_phone: '', address: '', confidence: 0, image: base64 });
       }
       setBulkExtractedData(results);
       setExtractedFields(results[0]);
@@ -280,14 +281,14 @@ function CaptureDashboardContent() {
         }
       } else {
         console.warn('OCR failed, falling back to manual entry');
-        setExtractedFields({ name: '', company: '', title: '', email: '', phone: '', secondary_phone: '', confidence: 0, image: verificationQueue[index] });
+        setExtractedFields({ name: '', company: '', title: '', email: '', phone: '', secondary_phone: '', address: '', confidence: 0, image: verificationQueue[index] });
         if (mode !== 'bulk') {
           setShowFieldsModal(true);
         }
       }
     } catch (e) {
       console.error('Manual card processing failed:', e);
-      setExtractedFields({ name: '', company: '', title: '', email: '', phone: '', secondary_phone: '', confidence: 0, image: verificationQueue[index] });
+      setExtractedFields({ name: '', company: '', title: '', email: '', phone: '', secondary_phone: '', address: '', confidence: 0, image: verificationQueue[index] });
       if (mode !== 'bulk') {
         setShowFieldsModal(true);
       }
@@ -473,6 +474,7 @@ function CaptureDashboardContent() {
             title: extractedFields.title,
             email: extractedFields.email,
             phone: extractedFields.phone,
+            address: extractedFields.address || null,
           },
           audioBase64: offlineAudioBase64,
           audioMimeType: audioBlobType,
