@@ -2,7 +2,28 @@ import { supabaseAdmin } from '@/lib/supabase';
 import { SettingsService } from '@/lib/services/settings';
 import { EmailService } from '@/lib/services/email';
 import { SequenceDraftAgent } from '@/lib/agents/sequenceDraft';
-import { SEQUENCE_GAP_DAYS, SEQUENCE_MAX_TOUCHES, type SequenceStatus } from '@/lib/sequenceConfig';
+import {
+  SEQUENCE_GAP_DAYS,
+  SEQUENCE_MAX_TOUCHES,
+  SEQUENCE_DAILY_LIMIT,
+  SEQUENCE_BATCH_SIZE,
+  SEQUENCE_SEND_DELAY_MS,
+  SEQUENCE_MAX_ATTEMPTS,
+  RETRY_DELAY_MS,
+  type SequenceStatus,
+} from '@/lib/sequenceConfig';
+
+/**
+ * Decides what a failed send means. Only a permanent rejection of the address (5xx) is a bounce.
+ * Provider quota messages also arrive as 5xx, so they are checked first and pause the whole run.
+ */
+function classifySendError(e: any): 'throttle' | 'bounce' | 'retry' {
+  const msg = String(e?.message || '');
+  if (/5.4.5|daily (user )?sending|quota|rate limit|too many|try again later|limit exceeded/i.test(msg)) return 'throttle';
+  const code = Number(e?.responseCode);
+  if (code >= 500 && code < 600) return 'bounce';
+  return 'retry';
+}
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const STALE_LOCK_MS = 15 * 60 * 1000;
@@ -172,7 +193,16 @@ export class SequenceService {
 
   /** Sends every email that is due. Called by the cron route. */
   public static async processDue(opts: { limit?: number; deadlineMs?: number } = {}): Promise<ProcessResult> {
-    const limit = opts.limit ?? 25;
+    const startOfDay = new Date();
+    startOfDay.setUTCHours(0, 0, 0, 0);
+    const { count: sentToday } = await supabaseAdmin
+      .from('followups')
+      .select('id', { count: 'exact', head: true })
+      .eq('channel', 'email')
+      .eq('status', 'sent')
+      .gte('sent_at', startOfDay.toISOString());
+    const remainingToday = Math.max(0, SEQUENCE_DAILY_LIMIT - (sentToday || 0));
+    const limit = Math.min(opts.limit ?? SEQUENCE_BATCH_SIZE, remainingToday);
     const deadline = Date.now() + (opts.deadlineMs ?? 50_000);
     const result: ProcessResult = { sent: 0, skipped: 0, failed: 0, errors: [] };
 
@@ -182,6 +212,8 @@ export class SequenceService {
       .update({ status: 'queued', locked_at: null })
       .eq('status', 'sending')
       .lt('locked_at', new Date(Date.now() - STALE_LOCK_MS).toISOString());
+
+    if (limit === 0) return result; // today's cap is reached; the rest wait for tomorrow
 
     const { data: due, error } = await supabaseAdmin
       .from('followups')
@@ -279,14 +311,28 @@ export class SequenceService {
             claimed.sequence_position
           );
         } catch (e: any) {
-          // A send failure counts as a bounce: stop mailing this address until a human looks.
-          await supabaseAdmin
-            .from('followups')
-            .update({ status: 'send_failed', locked_at: null })
-            .eq('id', claimed.id);
-          await this.stop(lead.id, 'bounced');
           result.errors.push(`lead ${lead.id}: send failed (${e.message})`);
           result.failed++;
+          const kind = classifySendError(e);
+
+          if (kind === 'throttle') {
+            // Provider says we are over quota: put it back and stop this run.
+            await release();
+            break;
+          }
+
+          const attempts = (claimed.attempts || 0) + 1;
+          if (kind === 'retry' && attempts < SEQUENCE_MAX_ATTEMPTS) {
+            await release({ attempts, scheduled_for: new Date(Date.now() + RETRY_DELAY_MS).toISOString() });
+            continue;
+          }
+
+          // Permanent rejection (or too many failed retries): stop mailing this address until a human looks.
+          await supabaseAdmin
+            .from('followups')
+            .update({ status: 'send_failed', attempts, locked_at: null })
+            .eq('id', claimed.id);
+          await this.stop(lead.id, 'bounced');
           continue;
         }
 
@@ -295,6 +341,7 @@ export class SequenceService {
           .update({ status: 'sent', sent_at: new Date().toISOString(), locked_at: null })
           .eq('id', claimed.id);
         result.sent++;
+        if (SEQUENCE_SEND_DELAY_MS > 0) await new Promise(r => setTimeout(r, SEQUENCE_SEND_DELAY_MS));
 
         // Email N just went out, so write email N+1 now.
         await this.scheduleNext(lead.id).catch(e =>

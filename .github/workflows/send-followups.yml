@@ -1,0 +1,20 @@
+# Vercel Hobby only allows one cron run per day, so GitHub Actions calls the same endpoint
+# every 10 minutes during business hours (04:00-12:59 UTC = 09:30-18:29 IST).
+# Each call sends up to SEQUENCE_BATCH_SIZE emails, capped by SEQUENCE_DAILY_LIMIT.
+# Repo secrets needed: APP_URL (e.g. https://firsthey.vercel.app) and CRON_SECRET.
+name: send-followups
+
+on:
+  schedule:
+    - cron: '*/10 4-12 * * *'
+  workflow_dispatch:
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger follow-up sender
+        run: |
+          curl --fail-with-body --silent --show-error --max-time 90 \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "${{ secrets.APP_URL }}/api/cron/send-followups"

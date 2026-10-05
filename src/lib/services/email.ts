@@ -112,7 +112,9 @@ export class EmailService {
 
       return info.messageId || 'nodemailer-success-id';
     } catch (error: any) {
-      throw new Error(`Nodemailer API error: ${error.message || error}`);
+      const wrapped: any = new Error(`Nodemailer API error: ${error.message || error}`);
+      wrapped.responseCode = error.responseCode;
+      throw wrapped;
     }
   }
 
