@@ -44,7 +44,8 @@ export async function updateSession(request: NextRequest) {
     request.nextUrl.pathname.startsWith('/api/cron') ||
     request.nextUrl.pathname.startsWith('/api/webhooks') ||
     request.nextUrl.pathname.startsWith('/api/unsubscribe') ||
-    request.nextUrl.pathname.includes('/track-open');
+    request.nextUrl.pathname.includes('/track-open') ||
+    request.nextUrl.pathname.includes('/track-click');
 
   if (!user && !isPublicRoute) {
     // If it is an API route, return 401 Unauthorized JSON instead of HTML redirect

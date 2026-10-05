@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import { DEFAULT_LINK_KEY, TRACKED_LINKS } from '@/lib/emailTracking';
 
 export class EmailService {
   /**
@@ -57,12 +58,15 @@ export class EmailService {
     const transporter = this.getTransporter(finalUser, finalPass);
     let fromAddress = finalUser;
     const fromName = credentials.fromName || finalUser.split('@')[0] || '';
-    let finalTo = to;
+    const finalTo = to;
 
     if (finalPass.startsWith('re_')) {
-      // Resend free tier restrictions
-      fromAddress = 'onboarding@resend.dev';
-      finalTo = 'avrsmain@gmail.com';
+      // Resend authenticates with the API key, so the sender must be an address on a
+      // domain verified in Resend. Fall back to EMAIL_FROM_ADDRESS if the saved user isn't an email.
+      fromAddress = finalUser.includes('@') ? finalUser : process.env.EMAIL_FROM_ADDRESS || '';
+      if (!fromAddress) {
+        throw new Error('Resend needs a verified sender address. Set it as the email user in Settings or EMAIL_FROM_ADDRESS.');
+      }
     }
 
     // Plain text version — always included. This is required for inbox delivery.
@@ -79,7 +83,11 @@ export class EmailService {
       pixelTag = `<img src="${trackingUrl}" width="0" height="0" alt="" style="display:none;" />`;
     }
 
-    const htmlBody = this.generateHtml(body, fromName, credentials.fromTitle || 'Export Marketing Strategist', pixelTag, unsubscribeUrl);
+    const demoUrl = leadId && finalAppUrl
+      ? `${finalAppUrl}/api/leads/${leadId}/track-click?l=${DEFAULT_LINK_KEY}${touchPosition ? `&touch=${touchPosition}` : ''}`
+      : TRACKED_LINKS[DEFAULT_LINK_KEY];
+
+    const htmlBody = this.generateHtml(body, fromName, credentials.fromTitle || 'Export Marketing Strategist', pixelTag, unsubscribeUrl, demoUrl);
 
     if (!transporter) {
       throw new Error('Failed to initialize email transporter.');
@@ -108,7 +116,7 @@ export class EmailService {
     }
   }
 
-  public static generateHtml(body: string, fromName: string, fromTitle: string, pixelTag: string = '', unsubscribeUrl: string = ''): string {
+  public static generateHtml(body: string, fromName: string, fromTitle: string, pixelTag: string = '', unsubscribeUrl: string = '', demoUrl: string = TRACKED_LINKS[DEFAULT_LINK_KEY]): string {
     const safeBody = body
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
@@ -145,7 +153,7 @@ export class EmailService {
     <div class="text-primary" style="font-size: 16px; color: #2d3748; line-height: 1.6; white-space: pre-wrap; margin-bottom: 25px;">${safeBody}</div>
 
     <div style="margin-bottom: 30px;">
-      <a href="https://kuula.co/share/5dBs1/collection/7ckpl?logo=-1&info=0&fs=1&vr=1&sd=1&autorotate=1.5&autop=10&thumbs=1" style="display: inline-block; padding: 16px 36px; background-color: #d32e2d; color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600; border-radius: 4px; letter-spacing: 0.5px;">
+      <a href="${demoUrl}" style="display: inline-block; padding: 16px 36px; background-color: #d32e2d; color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600; border-radius: 4px; letter-spacing: 0.5px;">
         VPV DEMO
       </a>
     </div>

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
+import { isLikelyBot } from '@/lib/emailTracking';
 
 // 1x1 transparent GIF base64 string
 const TRANSPARENT_GIF = Buffer.from(
@@ -19,7 +20,7 @@ export async function GET(
     // In background, fetch the current lead to get open count and history
     const { data: lead } = await supabaseAdmin
       .from('leads')
-      .select('open_count, open_history')
+      .select('open_count, open_history, organization_id')
       .eq('id', id)
       .single();
 
@@ -32,11 +33,23 @@ export async function GET(
         user_agent: req.headers.get('user-agent') || 'unknown'
       };
 
+      const touchNumber = parseInt(touch, 10);
+      await supabaseAdmin.from('email_events').insert({
+        lead_id: id,
+        organization_id: lead.organization_id,
+        touch: Number.isFinite(touchNumber) ? touchNumber : null,
+        event_type: 'open',
+        ip: newHistoryEvent.ip,
+        user_agent: newHistoryEvent.user_agent,
+        is_bot: isLikelyBot(newHistoryEvent.user_agent),
+      });
+
       // Update the lead's open tracking data
       await supabaseAdmin
         .from('leads')
         .update({
           is_opened: true,
+          last_engagement_at: newHistoryEvent.opened_at,
           open_count: (lead.open_count || 0) + 1,
           open_history: [...currentHistory, newHistoryEvent],
         })
