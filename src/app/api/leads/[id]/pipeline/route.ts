@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { createClient } from '@/utils/supabase/server';
 import { SettingsService } from '@/lib/services/settings';
+import { EngagementService } from '@/lib/services/engagement';
 
 export const dynamic = 'force-dynamic';
 
@@ -73,8 +74,25 @@ export async function GET(
       warnings.push('Could not read email settings.');
     }
 
+    let engagement: any = null;
+    try {
+      engagement = await EngagementService.forLead(auth.orgId, id);
+    } catch (e) {
+      warnings.push('Engagement summary unavailable.');
+    }
+
     return NextResponse.json({
       data: {
+        engagement: engagement && {
+          score: engagement.score,
+          level: engagement.level,
+          uniqueOpens: engagement.uniqueOpens,
+          uniqueClicks: engagement.uniqueClicks,
+          emailsSent: engagement.emailsSent,
+          replied: engagement.replied,
+          lastActivityAt: engagement.lastActivityAt,
+          touches: engagement.touches,
+        },
         lead: {
           id: lead.id,
           status: lead.status,

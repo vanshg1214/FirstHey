@@ -29,6 +29,13 @@ const fmt = (iso?: string | null) =>
     ? new Date(iso).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
     : null;
 
+const levelStyle: Record<string, string> = {
+  Hot: 'bg-rose-50 text-rose-700 border-rose-200',
+  Warm: 'bg-amber-50 text-amber-700 border-amber-200',
+  Interested: 'bg-blue-50 text-blue-700 border-blue-200',
+  'No activity': 'bg-slate-50 text-slate-500 border-slate-200',
+};
+
 const followupStatusStyle: Record<string, string> = {
   sent: 'bg-emerald-50 text-emerald-700 border-emerald-200',
   queued: 'bg-slate-50 text-slate-500 border-slate-200',
@@ -120,7 +127,7 @@ export default function EmailPipeline({ leadId, refreshKey }: EmailPipelineProps
     );
   }
 
-  const { lead, followups, replies, sender, warnings } = data;
+  const { lead, followups, replies, sender, warnings, engagement } = data;
   const sentFollowups = followups.filter((f: any) => f.status === 'sent');
   const firstSent = sentFollowups[0];
   const emailSent = sentFollowups.some((f: any) => f.channel === 'email');
@@ -246,6 +253,35 @@ export default function EmailPipeline({ leadId, refreshKey }: EmailPipelineProps
         })}
       </ol>
 
+      {/* Interest score from opens, clicks and replies */}
+      {engagement && (
+        <div className="bg-slate-50 border border-slate-100 rounded-lg px-3 py-2.5 space-y-2">
+          <div className="flex items-center justify-between text-[11px]">
+            <span className="text-slate-500">Interest</span>
+            <span
+              className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border ${levelStyle[engagement.level] || levelStyle['No activity']}`}
+            >
+              {engagement.level} · {engagement.score} pts
+            </span>
+          </div>
+          <div className="grid grid-cols-3 gap-2 text-center">
+            {[
+              { label: 'Opened', value: `${engagement.uniqueOpens}/${engagement.emailsSent}` },
+              { label: 'Clicked', value: `${engagement.uniqueClicks}/${engagement.emailsSent}` },
+              { label: 'Replied', value: engagement.replied ? 'Yes' : 'No' },
+            ].map(m => (
+              <div key={m.label} className="bg-white border border-slate-100 rounded-md py-1.5">
+                <div className="text-xs font-bold text-slate-800">{m.value}</div>
+                <div className="text-[9px] uppercase tracking-wide text-slate-400">{m.label}</div>
+              </div>
+            ))}
+          </div>
+          <p className="text-[10px] text-slate-400 leading-relaxed">
+            Open = 1 pt, click = 5 pts, reply = 10 pts. Opens can be overcounted by mail apps; clicks are the surest sign of interest.
+          </p>
+        </div>
+      )}
+
       {/* Automatic sequence: status, next send, pause/resume */}
       {(() => {
         const seqStatus: string = lead.sequence_status || 'active';
@@ -314,6 +350,19 @@ export default function EmailPipeline({ leadId, refreshKey }: EmailPipelineProps
                       {f.status === 'sent' ? `Sent ${fmt(f.sent_at || f.created_at)}` : `Scheduled ${fmt(f.scheduled_for)}`}
                     </div>
                   </div>
+                  {f.channel === 'email' && f.status === 'sent' && engagement?.touches?.[f.sequence_position]?.clicked && (
+                    <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border bg-purple-50 text-purple-700 border-purple-200">
+                      Clicked
+                    </span>
+                  )}
+                  {f.channel === 'email' &&
+                    f.status === 'sent' &&
+                    engagement?.touches?.[f.sequence_position]?.opened &&
+                    !engagement.touches[f.sequence_position].clicked && (
+                      <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border bg-blue-50 text-blue-700 border-blue-200">
+                        Opened
+                      </span>
+                    )}
                   <span
                     className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border ${
                       followupStatusStyle[f.status] || followupStatusStyle.queued
