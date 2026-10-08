@@ -1,7 +1,10 @@
 # Vercel Hobby only allows one cron run per day, so GitHub Actions calls the same endpoint
 # every 10 minutes during business hours (04:00-12:59 UTC = 09:30-18:29 IST).
 # Each call sends up to SEQUENCE_BATCH_SIZE emails, capped by SEQUENCE_DAILY_LIMIT.
-# Repo secrets needed: APP_URL (e.g. https://firsthey.vercel.app) and CRON_SECRET.
+#
+# Repository secrets needed (Settings > Secrets and variables > Actions > Repository secrets):
+#   APP_URL      your live address, e.g. https://firsthey.vercel.app (https://, no trailing slash)
+#   CRON_SECRET  the same value as CRON_SECRET in Vercel
 name: send-followups
 
 on:
@@ -12,9 +15,75 @@ on:
 jobs:
   run:
     runs-on: ubuntu-latest
+    env:
+      APP_URL: ${{ secrets.APP_URL }}
+      CRON_SECRET: ${{ secrets.CRON_SECRET }}
     steps:
       - name: Trigger follow-up sender
         run: |
-          curl --fail-with-body --silent --show-error --max-time 90 \
-            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
-            "${{ secrets.APP_URL }}/api/cron/send-followups"
+          fail() { echo "::error title=send-followups failed::$1"; echo "### ❌ Failed: $1" >> "$GITHUB_STEP_SUMMARY"; exit 1; }
+
+          # 1. Check the secrets exist before calling anything.
+          [ -n "${APP_URL:-}" ]     || fail "The APP_URL secret is not set. Add it as a Repository secret, e.g. https://firsthey.vercel.app"
+          [ -n "${CRON_SECRET:-}" ] || fail "The CRON_SECRET secret is not set. It must match CRON_SECRET in Vercel."
+
+          base="$(printf '%s' "$APP_URL" | tr -d '[:space:]')"
+          base="${base%/}"
+          case "$base" in
+            https://*|http://*) ;;
+            *) fail "APP_URL must start with https:// (it is currently: '$base')" ;;
+          esac
+
+          url="$base/api/cron/send-followups"
+          echo "Calling: $url"
+          echo "CRON_SECRET length: ${#CRON_SECRET} characters (must equal the length of the one in Vercel)"
+
+          # 2. Call the endpoint; keep the status code and the response body.
+          set +e
+          status="$(curl --silent --show-error --max-time 90 \
+            --output response.txt --write-out '%{http_code}' \
+            --header "Authorization: Bearer ${CRON_SECRET}" \
+            "$url" 2> curl_error.txt)"
+          curl_exit=$?
+          set -e
+
+          if [ "$curl_exit" -ne 0 ]; then
+            echo "curl error output:"; cat curl_error.txt
+            case "$curl_exit" in
+              3)  hint="the URL is malformed" ;;
+              6)  hint="the domain could not be resolved (check APP_URL for typos)" ;;
+              7)  hint="could not connect to the server" ;;
+              28) hint="the request timed out after 90 seconds" ;;
+              35|60) hint="an SSL/certificate problem" ;;
+              *)  hint="see the curl error output above" ;;
+            esac
+            fail "Could not reach $url (curl exit code $curl_exit: $hint)"
+          fi
+
+          echo "HTTP status: $status"
+          echo "Response body:"
+          cat response.txt
+          echo
+
+          # 3. Explain every status code.
+          case "$status" in
+            200) ;;
+            401) fail "401 Unauthorized. Either CRON_SECRET in GitHub does not match Vercel (compare the character count printed above), or Vercel Deployment Protection is blocking the request (the body would be an HTML sign-in page, not JSON)." ;;
+            404) fail "404 Not Found. The route does not exist at $url. Is the latest code deployed, and is APP_URL your production domain?" ;;
+            307|308|301|302) fail "$status redirect. APP_URL points at a domain that redirects (e.g. non-www to www). Use the final address; redirects drop the Authorization header. Redirect info: $(grep -i '^location' response.txt || echo 'see body above')" ;;
+            500) fail "500 from the app. If the body says 'CRON_SECRET is not configured', add CRON_SECRET in Vercel and redeploy. Otherwise read the body above and the Vercel function logs." ;;
+            *)   fail "Unexpected HTTP status $status. See the response body above." ;;
+          esac
+
+          # 4. Summarise what the run did.
+          {
+            echo "### ✅ send-followups ran (HTTP 200)"
+            echo '```json'
+            (jq '.data' response.txt 2>/dev/null || cat response.txt)
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          failed="$(jq -r '.data.failed // 0' response.txt 2>/dev/null || echo 0)"
+          if [ "$failed" != "0" ]; then
+            echo "::warning title=Some emails failed::$failed email(s) failed in this run. Errors: $(jq -c '.data.errors' response.txt 2>/dev/null)"
+          fi
