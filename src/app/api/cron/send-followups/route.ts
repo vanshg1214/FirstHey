@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { SequenceService } from '@/lib/services/sequence';
+import { bearerMatches } from '@/lib/security';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -15,7 +16,7 @@ export async function GET(req: NextRequest) {
   if (!secret) {
     return NextResponse.json({ error: 'CRON_SECRET is not configured' }, { status: 500 });
   }
-  if (req.headers.get('authorization') !== `Bearer ${secret}`) {
+  if (!bearerMatches(req.headers.get('authorization'), secret)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

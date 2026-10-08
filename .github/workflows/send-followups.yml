@@ -12,6 +12,14 @@ on:
     - cron: '*/10 4-12 * * *'
   workflow_dispatch:
 
+# This job only calls a URL, so it gets no access to the repository.
+permissions: {}
+
+# Never let two runs overlap.
+concurrency:
+  group: send-followups
+  cancel-in-progress: false
+
 jobs:
   run:
     runs-on: ubuntu-latest
@@ -82,6 +90,12 @@ jobs:
             (jq '.data' response.txt 2>/dev/null || cat response.txt)
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
+
+          blocked="$(jq -r '.data.blocked // empty' response.txt 2>/dev/null || true)"
+          if [ -n "$blocked" ]; then
+            echo "::notice title=Nothing sent on purpose::$blocked"
+            echo "> Nothing was sent: $blocked" >> "$GITHUB_STEP_SUMMARY"
+          fi
 
           failed="$(jq -r '.data.failed // 0' response.txt 2>/dev/null || echo 0)"
           if [ "$failed" != "0" ]; then

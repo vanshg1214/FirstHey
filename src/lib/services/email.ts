@@ -73,6 +73,10 @@ export class EmailService {
     // By sending ONLY plain text, we avoid all HTML-based spam filters.
     const finalAppUrl = appUrl || process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_PROJECT_PRODUCTION_URL ? 'https://' + process.env.VERCEL_PROJECT_PRODUCTION_URL : (process.env.VERCEL_URL ? 'https://' + process.env.VERCEL_URL : ''));
     const unsubscribeUrl = leadId && finalAppUrl ? `${finalAppUrl}/api/unsubscribe/${leadId}` : '';
+    if (leadId && !unsubscribeUrl) {
+      // Mail without a working opt-out link breaks anti-spam rules and gets domains blocked.
+      throw new Error('NEXT_PUBLIC_APP_URL is not set, so emails cannot include an unsubscribe link. Set it to your live address.');
+    }
 
     const textBody = `${body}\n\n${fromName}${unsubscribeUrl ? `\n\nTo stop receiving these emails: ${unsubscribeUrl}` : ''}`;
 

@@ -1,5 +1,6 @@
 import { supabaseAdmin } from '@/lib/supabase';
 import { SettingsService } from '@/lib/services/settings';
+import { checkSendingAllowed, isPlausibleEmail } from '@/lib/sendPolicy';
 import { EmailService } from '@/lib/services/email';
 import { SequenceDraftAgent } from '@/lib/agents/sequenceDraft';
 import {
@@ -33,6 +34,8 @@ export interface ProcessResult {
   skipped: number;
   failed: number;
   errors: string[];
+  /** Set when the run did nothing on purpose (outside sending hours, kill switch on). */
+  blocked?: string;
 }
 
 export class SequenceService {
@@ -193,6 +196,15 @@ export class SequenceService {
 
   /** Sends every email that is due. Called by the cron route. */
   public static async processDue(opts: { limit?: number; deadlineMs?: number } = {}): Promise<ProcessResult> {
+    const result: ProcessResult = { sent: 0, skipped: 0, failed: 0, errors: [] };
+
+    // Hard rules, enforced here so no caller can bypass them.
+    const policy = checkSendingAllowed();
+    if (!policy.allowed) {
+      result.blocked = policy.reason;
+      return result;
+    }
+
     const startOfDay = new Date();
     startOfDay.setUTCHours(0, 0, 0, 0);
     const { count: sentToday } = await supabaseAdmin
@@ -204,7 +216,6 @@ export class SequenceService {
     const remainingToday = Math.max(0, SEQUENCE_DAILY_LIMIT - (sentToday || 0));
     const limit = Math.min(opts.limit ?? SEQUENCE_BATCH_SIZE, remainingToday);
     const deadline = Date.now() + (opts.deadlineMs ?? 50_000);
-    const result: ProcessResult = { sent: 0, skipped: 0, failed: 0, errors: [] };
 
     // Recover rows left in 'sending' by a run that died mid-flight.
     await supabaseAdmin
@@ -249,6 +260,23 @@ export class SequenceService {
         const toEmail = lead?.email || lead?.contact_fields?.email;
 
         if (!lead || !toEmail) {
+          await supabaseAdmin.from('followups').update({ status: 'cancelled', locked_at: null }).eq('id', claimed.id);
+          result.skipped++;
+          continue;
+        }
+
+        // A bad address (usually a card-scan typo) would bounce and hurt the domain's reputation.
+        if (!isPlausibleEmail(toEmail)) {
+          await supabaseAdmin.from('followups').update({ status: 'skipped', locked_at: null }).eq('id', claimed.id);
+          await this.stop(lead.id, 'bounced');
+          result.errors.push(`lead ${lead.id}: "${toEmail}" is not a valid email address, sequence stopped`);
+          result.skipped++;
+          continue;
+        }
+
+        // Someone who has replied must never receive another automatic email.
+        if (lead.has_replied) {
+          await this.stop(lead.id, 'paused');
           await supabaseAdmin.from('followups').update({ status: 'cancelled', locked_at: null }).eq('id', claimed.id);
           result.skipped++;
           continue;
