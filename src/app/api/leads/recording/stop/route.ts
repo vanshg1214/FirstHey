@@ -100,6 +100,7 @@ export async function POST(req: NextRequest) {
     const extractionResult = await ContextExtractionAgent.extractContext(apiKey, audioBase64, mimeType);
     const transcript = extractionResult.transcript;
     const context = {
+      summary: extractionResult.summary ?? null,
       problem: extractionResult.problem,
       needs: extractionResult.needs,
       action_items: extractionResult.action_items,
@@ -122,7 +123,7 @@ export async function POST(req: NextRequest) {
           .eq('id', leadId)
           .single();
           
-        let finalContext = context;
+        let finalContext: any = context;
         if (existingLead && existingLead.context_summary) {
           finalContext = await ContextMergeAgent.merge(existingLead.context_summary, context);
         }

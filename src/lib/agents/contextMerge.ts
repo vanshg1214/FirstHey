@@ -13,8 +13,8 @@ export class ContextMergeAgent {
     }
 
     // If one is empty, just return the other to save API calls
-    const isAEmpty = !contextA || Object.keys(contextA).length === 0 || (!contextA.problem && !contextA.needs && contextA.action_items?.length === 0);
-    const isBEmpty = !contextB || Object.keys(contextB).length === 0 || (!contextB.problem && !contextB.needs && contextB.action_items?.length === 0);
+    const isAEmpty = !contextA || Object.keys(contextA).length === 0 || (!contextA.summary && !contextA.problem && !contextA.needs && !(contextA.action_items?.length > 0));
+    const isBEmpty = !contextB || Object.keys(contextB).length === 0 || (!contextB.summary && !contextB.problem && !contextB.needs && !(contextB.action_items?.length > 0));
     
     if (isAEmpty && isBEmpty) return { problem: '', needs: '', action_items: [], sentiment: 'neutral', notable_quotes: [], transcript: '' };
     if (isAEmpty) return contextB as ContextExtractionOutput;
@@ -34,7 +34,7 @@ export class ContextMergeAgent {
       Merge the following two contexts. Deduplicate any overlapping pain points, needs, or action items. 
       Retain all unique notable quotes. For sentiment, choose the most dominant or accurate sentiment representing both.
       
-      Return ONLY valid JSON with these exact keys: problem (string), needs (string), action_items (array of strings), sentiment ("positive", "neutral", "skeptical", or "critical"), and notable_quotes (array of strings).
+      Return ONLY valid JSON with these exact keys: summary (string, one combined two to three sentence summary), problem (string), needs (string), action_items (array of strings), sentiment ("positive", "neutral", "skeptical", or "critical"), and notable_quotes (array of strings).
       
       Context A:
       ${JSON.stringify(contextA, null, 2)}
@@ -61,6 +61,7 @@ export class ContextMergeAgent {
       return {
         ...contextA,
         ...contextB,
+        summary: `${contextA.summary || ''} ${contextB.summary || ''}`.trim(),
         problem: `${contextA.problem || ''} ${contextB.problem || ''}`.trim(),
         needs: `${contextA.needs || ''} ${contextB.needs || ''}`.trim(),
         action_items: [...new Set([...(contextA.action_items || []), ...(contextB.action_items || [])])],

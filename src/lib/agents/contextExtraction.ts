@@ -5,6 +5,7 @@ import { CONTEXT_EXTRACTION_SYSTEM_PROMPT } from '@/lib/prompts/contextExtractio
 // Define the extraction output schema, now including the transcript
 export const ContextExtractionOutputSchema = z.object({
   transcript: z.string().describe('The verbatim transcription of the provided audio'),
+  summary: z.string().nullable().optional().describe('Two to three sentences on what was discussed and how interested the buyer was'),
   problem: z.string().nullable().describe('The core problem or pain point the buyer is facing'),
   needs: z.string().nullable().describe('The specific services, products, or features they need'),
   action_items: z.array(z.string()).describe('A list of explicit promises or follow-up tasks agreed upon'),
@@ -45,7 +46,7 @@ export class ContextExtractionAgent {
       }
     };
 
-    const prompt = 'Listen to the following audio recording. First, provide a complete verbatim transcript. Second, extract the structured details according to the JSON schema format required. Keys must exactly match: transcript, problem, needs, action_items, notable_quotes, sentiment.';
+    const prompt = 'Listen to the following audio recording. First, provide a complete verbatim transcript. Second, extract the structured details according to the JSON schema format required. Keys must exactly match: transcript, summary, problem, needs, action_items, notable_quotes, sentiment.';
 
     try {
       const result = await model.generateContent([prompt, audioPart]);

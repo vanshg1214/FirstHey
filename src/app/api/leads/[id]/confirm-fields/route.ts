@@ -44,6 +44,7 @@ export async function POST(
     // 2. Extract conversation context from database lead record
     const context = updatedLead.context_summary || {};
     const contextDetails = {
+      summary: context.summary || null,
       problem: context.problem || null,
       needs: context.needs || null,
       action_items: context.action_items || [],

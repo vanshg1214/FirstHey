@@ -5,6 +5,7 @@ import { FileText, RefreshCw, AlertCircle, Sparkles, Loader2, Image as ImageIcon
 
 interface NotesScannerProps {
   onScanComplete: (data: {
+    summary?: string;
     problem: string;
     needs: string;
     action_items: string[];
@@ -113,6 +114,7 @@ export default function NotesScanner({ onScanComplete, isProcessing: externalPro
       }
 
       onScanComplete({
+        summary: result.data.summary,
         problem: result.data.problem,
         needs: result.data.needs,
         action_items: result.data.action_items,
@@ -135,18 +137,39 @@ export default function NotesScanner({ onScanComplete, isProcessing: externalPro
     setIsScanning(false);
   };
 
-  const handleSaveTypedNotes = () => {
+  const handleSaveTypedNotes = async () => {
     if (!typedNotes.trim()) {
       setError('Please type some notes before saving.');
       return;
     }
-    onScanComplete({
-      problem: typedNotes.trim(),
-      needs: '',
-      action_items: [],
-      sentiment: 'neutral',
-      notable_quotes: [],
-    });
+
+    setIsScanning(true);
+    setError(null);
+    try {
+      // The AI turns the typed notes into the same structured context as a recording or a photo,
+      // and saves it on the lead so the follow-up email can use it.
+      const response = await fetch('/api/leads/notes-scan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: typedNotes.trim(), leadId }),
+      });
+      const result = await response.json().catch(() => null);
+      if (!response.ok || result?.error) {
+        throw new Error(result?.error?.message || 'Could not process your notes. Please try again.');
+      }
+      onScanComplete({
+        summary: result.data.summary,
+        problem: result.data.problem,
+        needs: result.data.needs,
+        action_items: result.data.action_items,
+        sentiment: result.data.sentiment,
+        notable_quotes: result.data.notable_quotes,
+      });
+    } catch (err: any) {
+      setError(err.message || 'An unexpected error occurred.');
+    } finally {
+      setIsScanning(false);
+    }
   };
 
   const isBusy = isScanning || externalProcessing;

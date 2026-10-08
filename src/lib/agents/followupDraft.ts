@@ -14,7 +14,7 @@ export class FollowupDraftAgent {
   public static async generateDraft(
     apiKey: string,
     contactFields: { name?: string | null; company?: string | null; title?: string | null },
-    contextSummary: { problem?: string | null; needs?: string | null; action_items?: string[]; notable_quotes?: string[] },
+    contextSummary: { summary?: string | null; problem?: string | null; needs?: string | null; action_items?: string[]; notable_quotes?: string[] },
     senderName: string = 'Sales Rep',
     exhibitionName?: string | null,
     companyResearch?: string | null,

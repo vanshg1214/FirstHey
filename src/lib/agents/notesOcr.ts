@@ -1,86 +1,76 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { z } from 'zod';
 import { ContextExtractionOutput } from './contextExtraction';
 
+const SYSTEM =
+  'You are an expert sales assistant. Your job is to read notes taken during a meeting with a lead and extract structured context. Only use what the notes say. You may paraphrase clearly, but never invent facts, numbers, names or commitments.';
+
+const KEYS =
+  'Return ONLY valid JSON with these exact keys: summary (string, two to three sentences on what was discussed and how interested the lead seemed), problem (string), needs (string, what they asked for or showed interest in), action_items (array of strings), sentiment ("positive", "neutral", "skeptical", or "critical"), and notable_quotes (array of strings). If something is not in the notes use an empty string or empty array.';
+
+const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
+
+export class NotesProcessingError extends Error {}
+
 export class NotesOcrAgent {
-  /**
-   * Processes an array of base64 images of handwritten notes and returns structured context fields.
-   * Uses Google Generative AI SDK directly for native multi-image support.
-   */
-  public static async processNotes(images: { base64Data: string; mimeType: string }[]): Promise<ContextExtractionOutput> {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      throw new Error('Gemini API key (GEMINI_API_KEY) is missing in environment variables.');
+  private static async run(apiKey: string | undefined, parts: any[]): Promise<ContextExtractionOutput> {
+    const key = apiKey || process.env.GEMINI_API_KEY;
+    if (!key) {
+      throw new NotesProcessingError('No Gemini API key is configured. Add one in Settings.');
     }
 
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({
+    const model = new GoogleGenerativeAI(key).getGenerativeModel({
       model: 'gemini-3.6-flash',
-      systemInstruction: 'You are an expert sales assistant. Your job is to read handwritten notes taken during a meeting with a lead and extract structured context. Extract the lead\'s pain points, needs, action items, overall sentiment, and any direct quotes if noted.',
-      generationConfig: {
-        temperature: 0,
-        responseMimeType: 'application/json',
-      },
+      systemInstruction: SYSTEM,
+      generationConfig: { temperature: 0, responseMimeType: 'application/json' },
     });
 
-    const imageParts = images.map(img => ({
-      inlineData: {
-        data: img.base64Data,
-        mimeType: img.mimeType,
-      },
-    }));
-
-    const prompt = `Read the handwritten notes in the provided image(s) and extract the context. Combine information if there are multiple images. Return ONLY valid JSON with these exact keys: problem (string), needs (string), action_items (array of strings), sentiment ("positive", "neutral", "skeptical", or "critical"), and notable_quotes (array of strings). Do not invent information; if it's not present, use empty strings or empty arrays.`;
-
-    let attempts = 0;
     const maxAttempts = 3;
-    const delay = (ms: number) => new Promise((res) => setTimeout(res, ms));
-
-    while (attempts < maxAttempts) {
+    let lastError: any = null;
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
-        const result = await model.generateContent([prompt, ...imageParts]);
-        const text = result.response.text();
-        // Strip markdown code fences if present
-        const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+        const result = await model.generateContent(parts);
+        const cleaned = result.response
+          .text()
+          .replace(/```json\n?/g, '')
+          .replace(/```\n?/g, '')
+          .trim();
         const parsed = JSON.parse(cleaned);
-        return {
-          ...parsed,
-          transcript: '',
-        } as ContextExtractionOutput;
+        return { ...parsed, transcript: '' } as ContextExtractionOutput;
       } catch (error: any) {
-        attempts++;
-        console.warn(`Notes OCR attempt ${attempts} failed:`, error.message || error);
-        
-        const isRetryable = error.status === 429 || error.status === 503 || 
-                           (error.message && (error.message.includes('429') || error.message.includes('503') || error.message.includes('Quota exceeded') || error.message.includes('Too Many Requests') || error.message.includes('Service Unavailable')));
-                           
-        if (isRetryable && attempts < maxAttempts) {
-          const waitTime = attempts * 5000;
-          console.log(`Rate limited/Unavailable. Waiting ${waitTime/1000}s before retrying...`);
-          await delay(waitTime);
+        lastError = error;
+        console.warn(`Notes extraction attempt ${attempt} failed:`, error.message || error);
+        const msg = String(error?.message || '');
+        const retryable =
+          error?.status === 429 ||
+          error?.status === 503 ||
+          /429|503|Quota exceeded|Too Many Requests|Service Unavailable/i.test(msg);
+        if (retryable && attempt < maxAttempts) {
+          await delay(attempt * 5000);
           continue;
         }
-
-        console.error('Final error in Notes OCR Agent (Gemini):', error);
-        return {
-          problem: '',
-          needs: '',
-          action_items: [],
-          sentiment: 'neutral',
-          notable_quotes: [],
-          transcript: '',
-        };
+        break;
       }
     }
+    // Surface the failure. Returning an empty result here is what made failed scans look like "no needs stated".
+    throw new NotesProcessingError(`Could not read the notes: ${lastError?.message || 'unknown error'}`);
+  }
 
-    return {
-      problem: '',
-      needs: '',
-      action_items: [],
-      sentiment: 'neutral',
-      notable_quotes: [],
-      transcript: '',
-    };
+  /** Reads photos of handwritten notes. */
+  public static async processNotes(
+    images: { base64Data: string; mimeType: string }[],
+    apiKey?: string
+  ): Promise<ContextExtractionOutput> {
+    const imageParts = images.map(img => ({ inlineData: { data: img.base64Data, mimeType: img.mimeType } }));
+    return this.run(apiKey, [
+      `Read the handwritten notes in the provided image(s) and extract the context. Combine information if there are multiple images. ${KEYS}`,
+      ...imageParts,
+    ]);
+  }
+
+  /** Reads notes the rep typed in. */
+  public static async processText(text: string, apiKey?: string): Promise<ContextExtractionOutput> {
+    return this.run(apiKey, [
+      `These are notes typed by a sales rep after meeting a lead at an exhibition. Extract the context.\n\nNotes:\n"""\n${text}\n"""\n\n${KEYS}`,
+    ]);
   }
 }
-// Force Next.js Turbopack cache invalidation

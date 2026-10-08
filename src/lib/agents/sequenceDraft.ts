@@ -3,7 +3,7 @@ import { SEQUENCE_NEXT_SYSTEM_PROMPT } from '@/lib/prompts/sequenceNext.prompt';
 
 export interface SequenceDraftInput {
   contact: { name?: string | null; company?: string | null; title?: string | null };
-  context: { problem?: string | null; needs?: string | null; action_items?: string[]; notable_quotes?: string[] };
+  context: { summary?: string | null; problem?: string | null; needs?: string | null; action_items?: string[]; notable_quotes?: string[] };
   exhibition?: string | null;
   companyProfile?: string | null;
   previousEmails: { position: number; subject: string | null; body: string | null; sent_at: string | null }[];

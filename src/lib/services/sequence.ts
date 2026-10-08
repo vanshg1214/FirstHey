@@ -62,6 +62,7 @@ export class SequenceService {
         title: contact.title || lead.title || null,
       },
       context: {
+        summary: context.summary || null,
         problem: context.problem || null,
         needs: context.needs || null,
         action_items: context.action_items || [],

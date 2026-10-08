@@ -76,6 +76,7 @@ function CaptureDashboardContent() {
   const [transcript, setTranscript] = useState<string>('');
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [context, setContext] = useState<any>(null);
+  const [captureError, setCaptureError] = useState<string | null>(null);
   const [extractedFields, setExtractedFields] = useState<ExtractedContact | null>(null);
   const [bulkExtractedData, setBulkExtractedData] = useState<(ExtractedContact | null)[]>([]);
   const [emailDraft, setEmailDraft] = useState<{ subject: string; emailBody: string; whatsappBody: string } | null>(null);
@@ -135,6 +136,7 @@ function CaptureDashboardContent() {
 
   const handleRecordingComplete = async (audioBlob: Blob) => {
     setAudioProcessing(true);
+    setCaptureError(null);
     setAudioUrl(URL.createObjectURL(audioBlob));
     setAudioBlobType(audioBlob.type);
     
@@ -184,9 +186,13 @@ function CaptureDashboardContent() {
           setContext(result.data.context);
           if (result.data.leadId && !leadId) setLeadId(result.data.leadId);
         }
+      } else {
+        const failure = await response.json().catch(() => null);
+        setCaptureError(failure?.error?.message || 'The recording could not be analysed. You can record again or add notes instead.');
       }
     } catch (e) {
       console.error('Audio processing failed:', e);
+      setCaptureError('The recording could not be analysed. Check your connection and try again, or add notes instead.');
     } finally {
       setAudioProcessing(false);
       setMode('review');
@@ -546,6 +552,7 @@ function CaptureDashboardContent() {
     setTranscript('');
     setAudioUrl(null);
     setContext(null);
+    setCaptureError(null);
     setExtractedFields(null);
     setEmailDraft(null);
     setIsComplete(false);
@@ -824,21 +831,69 @@ function CaptureDashboardContent() {
                         <ShieldCheck className="w-4 h-4 text-blue-600" /> Meeting Context
                       </h4>
                       <div className="space-y-6">
-                        <div>
-                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Stated Need</span>
-                          <p className="text-base text-slate-800 leading-relaxed font-medium">{context.needs || 'No specific needs stated.'}</p>
-                        </div>
-                        {context.notable_quotes?.length > 0 && (
-                          <div>
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Key Quote</span>
-                            <p className="text-lg text-slate-600 italic border-l-4 border-blue-200 pl-4 bg-blue-50/50 py-3 rounded-r-xl">"{context.notable_quotes[0]}"</p>
+                        {captureError && (
+                          <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-xs text-red-700">
+                            <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                            <span>{captureError}</span>
                           </div>
                         )}
+                        {(() => {
+                          const hasAny = !!(context.summary || context.needs || context.problem || context.action_items?.length > 0 || context.notable_quotes?.length > 0);
+                          if (!hasAny) {
+                            return (
+                              <p className="text-sm text-slate-500 leading-relaxed">
+                                Nothing was captured from the conversation yet. Record the chat or add notes (typed or a photo) so the follow-up email can mention what you discussed.
+                              </p>
+                            );
+                          }
+                          return (
+                            <>
+                              {context.summary && (
+                                <div>
+                                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Summary</span>
+                                  <p className="text-base text-slate-800 leading-relaxed font-medium">{context.summary}</p>
+                                </div>
+                              )}
+                              {context.needs && (
+                                <div>
+                                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Stated Need</span>
+                                  <p className="text-base text-slate-800 leading-relaxed font-medium">{context.needs}</p>
+                                </div>
+                              )}
+                              {context.problem && (
+                                <div>
+                                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Challenge</span>
+                                  <p className="text-base text-slate-800 leading-relaxed font-medium">{context.problem}</p>
+                                </div>
+                              )}
+                              {context.action_items?.length > 0 && (
+                                <div>
+                                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Follow-ups Agreed</span>
+                                  <ul className="space-y-1">
+                                    {context.action_items.map((item: string, i: number) => (
+                                      <li key={i} className="text-sm text-slate-700 leading-relaxed flex gap-2">
+                                        <span className="text-blue-500">&bull;</span>
+                                        <span>{item}</span>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                              {context.notable_quotes?.length > 0 && (
+                                <div>
+                                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Key Quote</span>
+                                  <p className="text-lg text-slate-600 italic border-l-4 border-blue-200 pl-4 bg-blue-50/50 py-3 rounded-r-xl">"{context.notable_quotes[0]}"</p>
+                                </div>
+                              )}
+                            </>
+                          );
+                        })()}
                       </div>
                     </div>
                   ) : (
                     <div className="bg-slate-50 border border-slate-200 border-dashed rounded-3xl p-6 md:p-8 flex-1 flex flex-col items-center justify-center text-center text-slate-400">
                       <p className="text-sm font-medium">No notes or voice recorded</p>
+                      {captureError && <p className="text-xs text-red-600 mt-2 max-w-xs">{captureError}</p>}
                     </div>
                   )}
                 </div>
