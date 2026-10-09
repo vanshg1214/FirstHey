@@ -14,9 +14,11 @@ interface NotesScannerProps {
   }) => void;
   isProcessing?: boolean;
   leadId?: string | null;
+  /** Creates the lead if it does not exist yet, so notes added first are still saved on it. */
+  ensureLeadId?: () => Promise<string | null>;
 }
 
-export default function NotesScanner({ onScanComplete, isProcessing: externalProcessing = false, leadId }: NotesScannerProps) {
+export default function NotesScanner({ onScanComplete, isProcessing: externalProcessing = false, leadId, ensureLeadId }: NotesScannerProps) {
   const [images, setImages] = useState<string[]>([]);
   const [isScanning, setIsScanning] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
@@ -100,7 +102,7 @@ export default function NotesScanner({ onScanComplete, isProcessing: externalPro
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ images, leadId }),
+        body: JSON.stringify({ images, leadId: leadId || (ensureLeadId ? await ensureLeadId() : null) }),
       });
 
       if (!response.ok) {
@@ -151,7 +153,7 @@ export default function NotesScanner({ onScanComplete, isProcessing: externalPro
       const response = await fetch('/api/leads/notes-scan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: typedNotes.trim(), leadId }),
+        body: JSON.stringify({ text: typedNotes.trim(), leadId: leadId || (ensureLeadId ? await ensureLeadId() : null) }),
       });
       const result = await response.json().catch(() => null);
       if (!response.ok || result?.error) {

@@ -709,7 +709,7 @@ function CaptureDashboardContent() {
                     </div>
                     <div className="w-full max-w-sm mx-auto">
                       {mode === 'voice' && <RecordButton onRecordingComplete={handleRecordingComplete} isProcessing={audioProcessing} />}
-                      {mode === 'notes' && <NotesScanner onScanComplete={handleNotesScanComplete} isProcessing={notesProcessing} leadId={leadId} />}
+                      {mode === 'notes' && <NotesScanner onScanComplete={handleNotesScanComplete} isProcessing={notesProcessing} leadId={leadId} ensureLeadId={ensureLeadId} />}
                     </div>
                     <button 
                       onClick={() => setMode(mode === 'notes' ? 'voice' : 'review')} 
