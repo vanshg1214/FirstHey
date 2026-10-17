@@ -208,14 +208,24 @@ export class SequenceService {
 
     const startOfDay = new Date();
     startOfDay.setUTCHours(0, 0, 0, 0);
-    const { count: sentToday } = await supabaseAdmin
-      .from('followups')
-      .select('id', { count: 'exact', head: true })
-      .eq('channel', 'email')
-      .eq('status', 'sent')
-      .gte('sent_at', startOfDay.toISOString());
-    const remainingToday = Math.max(0, SEQUENCE_DAILY_LIMIT - (sentToday || 0));
-    const limit = Math.min(opts.limit ?? SEQUENCE_BATCH_SIZE, remainingToday);
+    const limit = opts.limit ?? SEQUENCE_BATCH_SIZE;
+
+    // The daily cap is per organization (each one sends from its own mailbox), so one
+    // customer reaching their cap never blocks another.
+    const remainingByOrg = new Map<string, number>();
+    const remainingFor = async (orgId: string): Promise<number> => {
+      if (!remainingByOrg.has(orgId)) {
+        const { count } = await supabaseAdmin
+          .from('followups')
+          .select('id, leads!inner(organization_id)', { count: 'exact', head: true })
+          .eq('channel', 'email')
+          .eq('status', 'sent')
+          .eq('leads.organization_id', orgId)
+          .gte('sent_at', startOfDay.toISOString());
+        remainingByOrg.set(orgId, Math.max(0, SEQUENCE_DAILY_LIMIT - (count || 0)));
+      }
+      return remainingByOrg.get(orgId)!;
+    };
     const deadline = Date.now() + (opts.deadlineMs ?? 50_000);
 
     // Recover rows left in 'sending' by a run that died mid-flight.
@@ -225,20 +235,26 @@ export class SequenceService {
       .eq('status', 'sending')
       .lt('locked_at', new Date(Date.now() - STALE_LOCK_MS).toISOString());
 
-    if (limit === 0) return result; // today's cap is reached; the rest wait for tomorrow
-
     const { data: due, error } = await supabaseAdmin
       .from('followups')
-      .select('id, lead_id, sequence_position')
+      .select('id, lead_id, sequence_position, leads!inner(organization_id)')
       .eq('status', 'queued')
       .eq('channel', 'email')
       .lte('scheduled_for', new Date().toISOString())
       .order('scheduled_for', { ascending: true })
-      .limit(limit);
+      .limit(limit * 10); // a wider pool, so an organization at its cap doesn't hide others
     if (error) throw new Error(`Could not load due emails: ${error.message}`);
 
+    let attempted = 0;
     for (const item of due || []) {
-      if (Date.now() > deadline) break; // the rest are picked up on the next run
+      if (Date.now() > deadline || attempted >= limit) break; // the rest are picked up on the next run
+
+      const itemOrg = (item as any).leads?.organization_id as string | undefined;
+      if (!itemOrg) continue;
+      const left = await remainingFor(itemOrg);
+      if (left <= 0) continue; // this organization's cap is reached; its rest wait for tomorrow
+      attempted++;
+      remainingByOrg.set(itemOrg, left - 1);
 
       // Claim the row so two overlapping runs can never send the same email.
       const { data: claimed } = await supabaseAdmin

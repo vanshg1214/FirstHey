@@ -160,15 +160,23 @@ export class LeadsRepository {
   /**
    * Updates the exhibition and stall event tracking data.
    */
-  public static async updateEventTracking(supabase: SupabaseClient<any, "public", any>, leadId: string, exhibition: string | null, stall: string | null) {
-    if (!exhibition && !stall) return null;
-    
+  public static async updateEventTracking(
+    supabase: SupabaseClient<any, "public", any>,
+    leadId: string,
+    exhibition: string | null,
+    stall: string | null,
+    exhibitionId?: string | null
+  ) {
+    // Only touch the fields that were provided, so saving one never wipes another.
+    const patch: Record<string, any> = {};
+    if (exhibition) patch.exhibition = exhibition;
+    if (exhibitionId) patch.exhibition_id = exhibitionId;
+    if (stall) patch.stall = stall;
+    if (Object.keys(patch).length === 0) return null;
+
     const { data, error } = await supabase
       .from('leads')
-      .update({
-        exhibition,
-        stall,
-      })
+      .update(patch)
       .eq('id', leadId)
       .select()
       .single();

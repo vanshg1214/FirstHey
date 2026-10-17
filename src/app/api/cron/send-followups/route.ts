@@ -17,7 +17,20 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'CRON_SECRET is not configured' }, { status: 500 });
   }
   if (!bearerMatches(req.headers.get('authorization'), secret)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // Lengths only (never the values), so a mismatch such as a trailing space or an old value
+    // in Vercel can be spotted from the GitHub log.
+    const header = req.headers.get('authorization') || '';
+    const received = header.startsWith('Bearer ') ? header.length - 7 : null;
+    return NextResponse.json(
+      {
+        error: 'Unauthorized',
+        hint:
+          received === null
+            ? 'No "Authorization: Bearer ..." header was received.'
+            : `The secret sent is ${received} characters; the server expects ${secret.length}.`,
+      },
+      { status: 401 }
+    );
   }
 
   try {

@@ -11,7 +11,7 @@ export async function POST(
   try {
     const { id } = await params;
     const body = await req.json();
-    const { contactFields, cardImage, confidence, campaignId, exhibition, stall } = body;
+    const { contactFields, cardImage, confidence, campaignId, exhibition, exhibition_id, stall } = body;
 
     // Authenticate user
     const supabaseUser = await createClient();
@@ -40,8 +40,8 @@ export async function POST(
     const supabase = supabaseAdmin;
 
     // 0. Update event tracking (E1 S1 feature)
-    if (exhibition || stall) {
-      await LeadsRepository.updateEventTracking(supabase, id, exhibition || null, stall || null);
+    if (exhibition || exhibition_id || stall) {
+      await LeadsRepository.updateEventTracking(supabase, id, exhibition || null, stall || null, exhibition_id || null);
     }
 
     // 1. Update contact fields if provided

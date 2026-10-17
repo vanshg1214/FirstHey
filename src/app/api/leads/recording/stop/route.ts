@@ -121,6 +121,7 @@ export async function POST(req: NextRequest) {
           .from('leads')
           .select('context_summary')
           .eq('id', leadId)
+          .eq('organization_id', organizationId)
           .single();
           
         let finalContext: any = context;
@@ -135,7 +136,8 @@ export async function POST(req: NextRequest) {
             context_summary: finalContext,
             status: 'extracted',
           })
-          .eq('id', leadId);
+          .eq('id', leadId)
+          .eq('organization_id', organizationId);
         
         // Save recording details (use upsert on conflict to prevent unique key violations)
         await supabase

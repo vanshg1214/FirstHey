@@ -45,6 +45,12 @@ function CaptureDashboardContent() {
     const urlExhibitionId = searchParams.get('exhibition_id');
     if (urlExhibitionId) {
       setExhibitionId(urlExhibitionId);
+    } else {
+      // Opened from the sidebar: preselect the exhibition used last time.
+      try {
+        const last = localStorage.getItem('firsthey_last_exhibition_id');
+        if (last) setExhibitionId(last);
+      } catch {}
     }
     
     // Fetch all exhibitions for the dropdown
@@ -55,6 +61,13 @@ function CaptureDashboardContent() {
       })
       .catch(err => console.error('Failed to fetch exhibitions', err));
   }, [searchParams]);
+
+  // Remember the choice for next time
+  useEffect(() => {
+    try {
+      if (exhibitionId) localStorage.setItem('firsthey_last_exhibition_id', exhibitionId);
+    } catch {}
+  }, [exhibitionId]);
 
   // Sync exhibition name when ID changes (for backward compatibility if needed)
   useEffect(() => {
@@ -407,6 +420,7 @@ function CaptureDashboardContent() {
             cardImage: base64,
             confidence: typeof extracted.confidence === 'number' ? (extracted.confidence / 100) : 1.0,
             exhibition: exhibition || null,
+            exhibition_id: exhibitionId || null,
             stall: stall || null
           }),
         });
@@ -447,6 +461,7 @@ function CaptureDashboardContent() {
         body: JSON.stringify({
           contactFields: extractedFields || {},
           senderName: 'Sales Exec',
+          exhibitionId: exhibitionId || null,
         }),
       });
 
@@ -519,6 +534,7 @@ function CaptureDashboardContent() {
               ? (extractedFields.confidence / 100) 
               : 1.0,
             exhibition: exhibition || null,
+            exhibition_id: exhibitionId || null,
             stall: stall || null
           }),
         });

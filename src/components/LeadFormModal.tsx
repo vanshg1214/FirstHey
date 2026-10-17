@@ -19,9 +19,11 @@ export default function LeadFormModal({ isOpen, onClose, onSave, initialData }: 
     title: '',
     address: '',
     exhibition: '',
+    exhibition_id: '',
     stall: '',
     notes: '',
   });
+  const [exhibitions, setExhibitions] = useState<{ id: string; name: string }[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -35,6 +37,7 @@ export default function LeadFormModal({ isOpen, onClose, onSave, initialData }: 
         title: initialData.contact_fields?.title || '',
         address: initialData.contact_fields?.address || initialData.address || '',
         exhibition: initialData.exhibition || '',
+        exhibition_id: initialData.exhibition_id || '',
         stall: initialData.stall || '',
         notes: initialData.notes || '',
       });
@@ -47,15 +50,24 @@ export default function LeadFormModal({ isOpen, onClose, onSave, initialData }: 
         title: '',
         address: '',
         exhibition: '',
+        exhibition_id: '',
         stall: '',
         notes: '',
       });
     }
   }, [isOpen, initialData]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    fetch(`/api/exhibitions?t=${Date.now()}`, { cache: 'no-store' })
+      .then(res => res.json())
+      .then(res => { if (res.data) setExhibitions(res.data); })
+      .catch(() => {});
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
@@ -76,7 +88,8 @@ export default function LeadFormModal({ isOpen, onClose, onSave, initialData }: 
           title: formData.title,
           address: formData.address,
         },
-        exhibition: formData.exhibition,
+        exhibition: formData.exhibition || null,
+        exhibition_id: formData.exhibition_id || null,
         stall: formData.stall,
         notes: formData.notes,
       };
@@ -173,14 +186,20 @@ export default function LeadFormModal({ isOpen, onClose, onSave, initialData }: 
 
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Exhibition</label>
-                <input
-                  type="text"
-                  name="exhibition"
-                  value={formData.exhibition}
-                  onChange={handleChange}
-                  placeholder="CES 2026"
+                <select
+                  name="exhibition_id"
+                  value={formData.exhibition_id}
+                  onChange={(e) => {
+                    const chosen = exhibitions.find(x => x.id === e.target.value);
+                    setFormData(prev => ({ ...prev, exhibition_id: e.target.value, exhibition: chosen ? chosen.name : '' }));
+                  }}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
-                />
+                >
+                  <option value="">-- Select Exhibition (Optional) --</option>
+                  {exhibitions.map(ex => (
+                    <option key={ex.id} value={ex.id}>{ex.name}</option>
+                  ))}
+                </select>
               </div>
 
               <div className="space-y-1.5">

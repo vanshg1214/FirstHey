@@ -97,7 +97,8 @@ export async function PUT(req: NextRequest) {
   try {
     const body = await req.json();
     const supabase = await createClient();
-    const { id, ...updateFields } = body;
+    // organization_id and other ownership fields must never be changed from the client.
+    const { id, organization_id: _org, captured_by: _by, ...updateFields } = body;
 
     if (!id) {
       return NextResponse.json({ error: 'Lead ID is required' }, { status: 400 });

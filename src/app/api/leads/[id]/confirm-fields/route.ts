@@ -13,7 +13,7 @@ export async function POST(
   try {
     const { id } = await params;
     const body = await req.json();
-    const { contactFields, customContext } = body;
+    const { contactFields, customContext, exhibitionId } = body;
 
     if (!contactFields) {
       return NextResponse.json(
@@ -40,6 +40,21 @@ export async function POST(
       return NextResponse.json({ data: null, error: { code: 'NOT_FOUND', message: 'Lead not found or access denied' } }, { status: 404 });
     }
     const updatedLead = await LeadsRepository.updateContactFields(supabase, id, contactFields, 'confirmed');
+
+    // The exhibition chosen in the capture screen belongs on the lead before the email is written.
+    if (typeof exhibitionId === 'string' && exhibitionId) {
+      const { data: chosen } = await supabaseAdmin
+        .from('exhibitions')
+        .select('id, name')
+        .eq('id', exhibitionId)
+        .eq('organization_id', orgId)
+        .maybeSingle();
+      if (chosen) {
+        await supabaseAdmin.from('leads').update({ exhibition: chosen.name, exhibition_id: chosen.id }).eq('id', id).eq('organization_id', orgId);
+        updatedLead.exhibition = chosen.name;
+        updatedLead.exhibition_id = chosen.id;
+      }
+    }
 
     // 2. Extract conversation context from database lead record
     const context = updatedLead.context_summary || {};
