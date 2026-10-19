@@ -1,6 +1,14 @@
 import nodemailer from 'nodemailer';
 import { DEFAULT_LINK_KEY, TRACKED_LINKS } from '@/lib/emailTracking';
 
+/** Legal footer: who is sending and where they are based. Set COMPANY_NAME and COMPANY_ADDRESS in the environment. */
+function companyFooter(): { name: string; address: string } {
+  return {
+    name: (process.env.COMPANY_NAME || 'The Next Design').trim(),
+    address: (process.env.COMPANY_ADDRESS || '').trim(),
+  };
+}
+
 export class EmailService {
   /**
    * Initializes and returns the Nodemailer Gmail transporter.
@@ -78,7 +86,8 @@ export class EmailService {
       throw new Error('NEXT_PUBLIC_APP_URL is not set, so emails cannot include an unsubscribe link. Set it to your live address.');
     }
 
-    const textBody = `${body}\n\n${fromName}${unsubscribeUrl ? `\n\nTo stop receiving these emails: ${unsubscribeUrl}` : ''}`;
+    const footer = companyFooter();
+    const textBody = `${body}\n\n${fromName}${footer.address ? `\n${footer.name}, ${footer.address}` : ''}${unsubscribeUrl ? `\n\nTo stop receiving these emails: ${unsubscribeUrl}` : ''}`;
 
     // Build tracking pixel URL (only appended to HTML part)
     let pixelTag = '';
@@ -101,6 +110,8 @@ export class EmailService {
       const info = await transporter.sendMail({
         from: `"${fromName}" <${fromAddress}>`,
         to: finalTo,
+        // Replies go to the person who sent the email, whatever the sending service is.
+        replyTo: fromAddress.includes('@') ? fromAddress : undefined,
         subject: subject,
         // Send BOTH text and minimal HTML so tracking pixel works while mimicking personal email
         text: textBody,
@@ -170,6 +181,8 @@ export class EmailService {
         <div class="text-secondary" style="font-size: 11px; color: #718096; text-transform: uppercase; letter-spacing: 1px; margin-top: 3px; font-weight: 600;">${fromTitle || 'Export Marketing Strategist'}</div>
       </div>
     </div>
+
+    ${companyFooter().address ? `<div class="text-secondary" style="font-size: 11px; color: #a0aec0; margin-top: 10px;">${companyFooter().name.replace(/</g, '&lt;')}, ${companyFooter().address.replace(/</g, '&lt;')}</div>` : ''}
 
     ${unsubscribeUrl ? `<div class="text-secondary" style="font-size: 11px; color: #a0aec0; margin-top: 10px;">Not interested? <a href="${unsubscribeUrl}" style="color: #a0aec0; text-decoration: underline;">Unsubscribe</a></div>` : ''}
 

@@ -16,13 +16,15 @@ import {
   BarChart2,
   Mail,
   User,
-  Bot
+  Bot,
+  ListChecks
 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 
 const NAV_ITEMS = [
   { href: '/leads', icon: LayoutDashboard, label: 'Dashboard', color: 'text-blue-600', hoverBg: 'hover:bg-blue-50', activeBg: 'bg-blue-50 border-blue-200' },
   { href: '/analytics', icon: BarChart2, label: 'Analytics', color: 'text-purple-600', hoverBg: 'hover:bg-purple-50', activeBg: 'bg-purple-50 border-purple-200' },
+  { href: '/queue', icon: ListChecks, label: 'Queue', color: 'text-rose-600', hoverBg: 'hover:bg-rose-50', activeBg: 'bg-rose-50 border-rose-200' },
   { href: '/exhibitions', icon: Target, label: 'Exhibitions', color: 'text-teal-600', hoverBg: 'hover:bg-teal-50', activeBg: 'bg-teal-50 border-teal-200' },
   { href: '/capture', icon: Zap, label: 'Capture', color: 'text-amber-600', hoverBg: 'hover:bg-amber-50', activeBg: 'bg-amber-50 border-amber-200' },
   { href: '/profile', icon: User, label: 'Profile', color: 'text-fuchsia-600', hoverBg: 'hover:bg-fuchsia-50', activeBg: 'bg-fuchsia-50 border-fuchsia-200' },

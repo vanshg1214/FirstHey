@@ -7,6 +7,9 @@ import {
   SEQUENCE_GAP_DAYS,
   SEQUENCE_MAX_TOUCHES,
   SEQUENCE_DAILY_LIMIT,
+  SEQUENCE_WARMUP_ENABLED,
+  SEQUENCE_WARMUP_START,
+  SEQUENCE_WARMUP_STEP,
   SEQUENCE_BATCH_SIZE,
   SEQUENCE_SEND_DELAY_MS,
   SEQUENCE_MAX_ATTEMPTS,
@@ -195,6 +198,44 @@ export class SequenceService {
     return { ok: true };
   }
 
+  /**
+   * How many emails an organization may still send today. The cap starts small and grows each day
+   * (warm-up) up to SEQUENCE_DAILY_LIMIT, because a mailbox that suddenly sends a lot gets flagged.
+   */
+  public static async getDailyAllowance(orgId: string): Promise<{ cap: number; sentToday: number; remaining: number }> {
+    const startOfDay = new Date();
+    startOfDay.setUTCHours(0, 0, 0, 0);
+
+    const { count } = await supabaseAdmin
+      .from('followups')
+      .select('id, leads!inner(organization_id)', { count: 'exact', head: true })
+      .eq('channel', 'email')
+      .eq('status', 'sent')
+      .eq('leads.organization_id', orgId)
+      .gte('sent_at', startOfDay.toISOString());
+    const sentToday = count || 0;
+
+    let cap = SEQUENCE_DAILY_LIMIT;
+    if (SEQUENCE_WARMUP_ENABLED) {
+      const { data: first } = await supabaseAdmin
+        .from('followups')
+        .select('sent_at, leads!inner(organization_id)')
+        .eq('channel', 'email')
+        .eq('status', 'sent')
+        .eq('leads.organization_id', orgId)
+        .not('sent_at', 'is', null)
+        .order('sent_at', { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      const firstDay = first?.sent_at ? new Date(first.sent_at) : null;
+      if (firstDay) firstDay.setUTCHours(0, 0, 0, 0);
+      const daysActive = firstDay ? Math.max(0, Math.floor((startOfDay.getTime() - firstDay.getTime()) / DAY_MS)) : 0;
+      cap = Math.min(SEQUENCE_DAILY_LIMIT, SEQUENCE_WARMUP_START + SEQUENCE_WARMUP_STEP * daysActive);
+    }
+
+    return { cap, sentToday, remaining: Math.max(0, cap - sentToday) };
+  }
+
   /** Sends every email that is due. Called by the cron route. */
   public static async processDue(opts: { limit?: number; deadlineMs?: number } = {}): Promise<ProcessResult> {
     const result: ProcessResult = { sent: 0, skipped: 0, failed: 0, errors: [] };
@@ -206,8 +247,6 @@ export class SequenceService {
       return result;
     }
 
-    const startOfDay = new Date();
-    startOfDay.setUTCHours(0, 0, 0, 0);
     const limit = opts.limit ?? SEQUENCE_BATCH_SIZE;
 
     // The daily cap is per organization (each one sends from its own mailbox), so one
@@ -215,17 +254,11 @@ export class SequenceService {
     const remainingByOrg = new Map<string, number>();
     const remainingFor = async (orgId: string): Promise<number> => {
       if (!remainingByOrg.has(orgId)) {
-        const { count } = await supabaseAdmin
-          .from('followups')
-          .select('id, leads!inner(organization_id)', { count: 'exact', head: true })
-          .eq('channel', 'email')
-          .eq('status', 'sent')
-          .eq('leads.organization_id', orgId)
-          .gte('sent_at', startOfDay.toISOString());
-        remainingByOrg.set(orgId, Math.max(0, SEQUENCE_DAILY_LIMIT - (count || 0)));
+        remainingByOrg.set(orgId, (await this.getDailyAllowance(orgId)).remaining);
       }
       return remainingByOrg.get(orgId)!;
     };
+
     const deadline = Date.now() + (opts.deadlineMs ?? 50_000);
 
     // Recover rows left in 'sending' by a run that died mid-flight.
