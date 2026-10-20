@@ -1,11 +1,11 @@
 import nodemailer from 'nodemailer';
 import { DEFAULT_LINK_KEY, TRACKED_LINKS } from '@/lib/emailTracking';
 
-/** Legal footer: who is sending and where they are based. Set COMPANY_NAME and COMPANY_ADDRESS in the environment. */
+/** Legal footer: who is sending and where they are based. Defaults are The Next Design; override with COMPANY_NAME and COMPANY_ADDRESS in the environment. */
 function companyFooter(): { name: string; address: string } {
   return {
     name: (process.env.COMPANY_NAME || 'The Next Design').trim(),
-    address: (process.env.COMPANY_ADDRESS || '').trim(),
+    address: (process.env.COMPANY_ADDRESS || 'Vipul Greens, Badshahpur Sohna Rd, Sector 48, Gurugram, Haryana 122018').trim(),
   };
 }
 
