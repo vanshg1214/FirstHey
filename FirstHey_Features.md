@@ -1,6 +1,6 @@
-# Apexora - Lead Capture Platform Features
+# FirstHey - Lead Capture Platform Features
 
-Apexora is an enterprise-grade, AI-native Lead Capture platform purpose-built for high-speed data entry at trade shows, exhibitions, and networking events. 
+FirstHey is an enterprise-grade, AI-native Lead Capture platform purpose-built for high-speed data entry at trade shows, exhibitions, and networking events. 
 
 Below is a comprehensive breakdown of the core features and capabilities our platform offers.
 
@@ -15,7 +15,7 @@ Designed for the chaos of the exhibition floor, the capture engine allows sales 
 *   **Instant Review & Submit:** Review the AI-extracted data, correct any minor typos, and save the lead instantly to your cloud database.
 
 ## 🎯 2. Automated Lead Scoring & Intelligence
-Not all leads are created equal. Apexora helps you prioritize who to contact first.
+Not all leads are created equal. FirstHey helps you prioritize who to contact first.
 
 *   **AI Lead Grading:** The platform automatically analyzes the lead's job title and your context notes to assign a score: **Hot**, **Warm**, or **Cold**.
 *   **Rich Profiles:** Every lead profile displays a clean timeline of when they were captured, which specific exhibition/campaign they belong to, and all attached notes and transcripts.

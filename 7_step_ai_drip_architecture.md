@@ -2,7 +2,7 @@
 
 ## Overview
 This document outlines the proposed architecture for implementing a 7-step follow-up sequence where:
-1. Every email touch (1 through 7) is uniquely written by the Apexora AI.
+1. Every email touch (1 through 7) is uniquely written by the FirstHey AI.
 2. The sequence progresses based on **Email Open** behavior (e.g., only send Email 2 if Email 1 was opened).
 
 There are two primary ways to architect this system alongside Zoho Campaigns.
@@ -13,7 +13,7 @@ There are two primary ways to architect this system alongside Zoho Campaigns.
 *The AI writes all 7 emails at the moment the lead is captured, and Zoho handles the routing.*
 
 ### How it works:
-1. **Lead Capture**: The user scans a card and uploads audio notes in Apexora.
+1. **Lead Capture**: The user scans a card and uploads audio notes in FirstHey.
 2. **AI Processing**: Instead of generating just one `AI_Email_Body`, the system is instructed to instantly draft the entire 7-step sequence at once based on the context.
 3. **Database Update**: The 7 emails are saved to Supabase (e.g., `ai_email_body_1`, `ai_email_body_2`, ..., `ai_email_body_7`).
 4. **Zoho Sync**: All 7 text fields are synced to the contact in Zoho CRM.
@@ -40,17 +40,17 @@ There are two primary ways to architect this system alongside Zoho Campaigns.
 *The AI writes the next email "on the fly" only when it receives a signal that the previous email was opened.*
 
 ### How it works:
-1. **Initial Send**: Apexora generates Email 1, pushes to Zoho, and Zoho sends it.
-2. **Open Event**: The lead opens Email 1. Zoho Campaigns triggers a Webhook hitting our Apexora API (`/api/webhooks/zoho/campaigns`).
-3. **AI Generation**: The Apexora webhook receives the "Opened" signal, looks up the lead, and the AI drafts Email 2 on the fly (knowing they just opened Email 1).
-4. **Push to Zoho**: Apexora updates the Zoho CRM contact with `AI_Email_Body_2` and signals Zoho to send the next email in the workflow.
+1. **Initial Send**: FirstHey generates Email 1, pushes to Zoho, and Zoho sends it.
+2. **Open Event**: The lead opens Email 1. Zoho Campaigns triggers a Webhook hitting our FirstHey API (`/api/webhooks/zoho/campaigns`).
+3. **AI Generation**: The FirstHey webhook receives the "Opened" signal, looks up the lead, and the AI drafts Email 2 on the fly (knowing they just opened Email 1).
+4. **Push to Zoho**: FirstHey updates the Zoho CRM contact with `AI_Email_Body_2` and signals Zoho to send the next email in the workflow.
 
 ### Pros:
 - **Cost Efficient**: You only spend AI tokens/API calls if the person actually opens the email.
 - **Contextually Aware**: The AI can write the email knowing exactly *when* the user opened the previous one.
 
 ### Cons:
-- **Complex Logic**: Requires writing and maintaining custom webhook receivers in Apexora.
+- **Complex Logic**: Requires writing and maintaining custom webhook receivers in FirstHey.
 - **Timing Risks**: If the AI API (Gemini/Claude) takes too long or errors out when the webhook fires, the next email might get delayed or sent blank.
 
 ---

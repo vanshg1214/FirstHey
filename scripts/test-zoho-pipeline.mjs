@@ -44,10 +44,10 @@ async function fullTest() {
   }
   console.log('Step 2 PASSED: Fetched', listsData.list_of_details.length, 'mailing lists:', listsData.list_of_details.map(l => l.listname).join(', '));
   
-  // STEP 3: Find "Apexora Leads"
-  const targetList = listsData.list_of_details.find(l => l.listname.toLowerCase() === 'apexora leads');
+  // STEP 3: Find "FirstHey Leads"
+  const targetList = listsData.list_of_details.find(l => l.listname.toLowerCase() === 'firsthey leads');
   if (!targetList) {
-    console.error('FAILED at Step 3: Apexora Leads list not found. Available lists:', listsData.list_of_details.map(l => l.listname).join(', '));
+    console.error('FAILED at Step 3: FirstHey Leads list not found. Available lists:', listsData.list_of_details.map(l => l.listname).join(', '));
     return;
   }
   console.log('Step 3 PASSED: Found list', targetList.listname, 'with key:', targetList.listkey);
