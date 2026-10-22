@@ -19,13 +19,13 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
-  title: "FirstHey | Live Workspace",
-  description: "Enterprise exhibition lead capture and intelligence platform.",
+  title: "FirstHey",
+  description: "Capture exhibition leads and follow up automatically.",
   manifest: "/manifest.json",
 };
 
 export const viewport: Viewport = {
-  themeColor: "#faf8f5",
+  themeColor: "#2563eb",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,

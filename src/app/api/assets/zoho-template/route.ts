@@ -7,7 +7,7 @@ export async function GET() {
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Apexora AI Email</title>
+  <title>FirstHey Email</title>
 </head>
 <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; color: #333333;">
   $[AI_Email_Body]$

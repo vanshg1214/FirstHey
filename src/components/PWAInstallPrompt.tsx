@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Download, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function PWAInstallPrompt() {
@@ -65,9 +65,8 @@ export default function PWAInstallPrompt() {
         >
           <div className="bg-white border border-slate-200 shadow-sm rounded-xl border border-blue-500/30 rounded-2xl p-4 shadow-2xl shadow-indigo-500/20 flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-slate-800/20 rounded-xl flex items-center justify-center shrink-0">
-                <Download className="w-6 h-6 text-slate-600" />
-              </div>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logo-mark.svg" alt="" width={48} height={48} className="w-12 h-12 rounded-xl shrink-0" />
               <div>
                 <h4 className="text-slate-900 font-bold text-sm">Install FirstHey</h4>
                 <p className="text-slate-500 text-xs mt-0.5">Add to your home screen for offline capture mode.</p>

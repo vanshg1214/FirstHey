@@ -1,11 +1,11 @@
 {
-  "name": "AI CRM Hub",
-  "short_name": "AI CRM",
-  "description": "Live workspace for capturing trade show leads with AI.",
+  "name": "FirstHey",
+  "short_name": "FirstHey",
+  "description": "Capture exhibition leads and follow up automatically.",
   "start_url": "/leads",
   "display": "standalone",
-  "background_color": "#000000",
-  "theme_color": "#000000",
+  "background_color": "#f8fafc",
+  "theme_color": "#2563eb",
   "orientation": "portrait",
   "icons": [
     {

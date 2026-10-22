@@ -18,8 +18,8 @@ export async function POST(
 
     const orgSettings = await SettingsService.getSettings(orgId);
     
-    const fromName = orgSettings.email_from_name || 'Nitin Gupta';
-    const fromTitle = orgSettings.email_sender_title || 'Export Marketing Strategist';
+    const fromName = orgSettings.email_from_name || '';
+    const fromTitle = orgSettings.email_sender_title || '';
 
     const html = EmailService.generateHtml(emailBody || '', fromName, fromTitle);
 

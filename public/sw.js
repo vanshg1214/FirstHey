@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ai-crm-cache-v1';
+const CACHE_NAME = 'firsthey-cache-v1';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();

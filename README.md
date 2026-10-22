@@ -1,9 +1,9 @@
 <div align="center">
-  <img src="public/favicon.ico" alt="Apexora Logo" width="100" height="100" />
-  <h1>Apexora AI CRM</h1>
+  <img src="public/logo-mark.png" alt="FirstHey Logo" width="100" height="100" />
+  <h1>FirstHey</h1>
   <p><strong>The Next-Generation B2B Lead Capture & Autonomous Follow-up Engine</strong></p>
   <p>
-    <a href="https://apexora-ai.vercel.app/login"><strong>Live Demo</strong></a>
+    <a href="https://firsthey-ai.vercel.app/login"><strong>Live Demo</strong></a>
     ·
     <a href="#-features"><strong>Features</strong></a>
     ·
@@ -15,9 +15,9 @@
 
 ## 🚀 Overview
 
-**Apexora AI CRM** is an enterprise-grade, AI-native platform designed to redefine how sales teams capture, process, and engage with leads at trade shows, conferences, and networking events. 
+**FirstHey** is an enterprise-grade, AI-native platform designed to redefine how sales teams capture, process, and engage with leads at trade shows, conferences, and networking events. 
 
-Say goodbye to manual data entry and generic mass emails. Apexora leverages state-of-the-art Artificial Intelligence (Google Gemini) to seamlessly extract data from business cards and voice dictations, instantly grade leads, and automatically orchestrate hyper-personalized, multi-touch email drip campaigns.
+Say goodbye to manual data entry and generic mass emails. FirstHey leverages state-of-the-art Artificial Intelligence (Google Gemini) to seamlessly extract data from business cards and voice dictations, instantly grade leads, and automatically orchestrate hyper-personalized, multi-touch email drip campaigns.
 
 ---
 

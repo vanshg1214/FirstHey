@@ -69,15 +69,11 @@ export default function Sidebar() {
       >
         {/* Logo */}
         <div className="w-full flex items-center justify-center px-2 py-4 border-b border-slate-200 min-h-[64px]">
-          {isExpanded ? (
-            <div className="flex flex-shrink-0 items-center justify-center animate-in fade-in zoom-in-95 duration-200 translate-x-1">
-              <span className="text-xl font-black text-slate-900 tracking-tight">FirstHey</span>
-            </div>
-          ) : (
-            <div className="flex-shrink-0 flex items-center justify-center animate-in fade-in zoom-in-95 duration-200 text-slate-900 font-black text-lg">
-              FH
-            </div>
-          )}
+          <div className="flex items-center gap-2.5 animate-in fade-in zoom-in-95 duration-200">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo-mark.svg" alt="FirstHey" width={32} height={32} className="w-8 h-8 flex-shrink-0 rounded-lg" />
+            {isExpanded && <span className="text-lg font-black text-slate-900 tracking-tight">FirstHey</span>}
+          </div>
         </div>
 
         {/* Nav Items */}

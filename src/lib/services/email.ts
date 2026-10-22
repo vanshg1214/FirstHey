@@ -100,7 +100,7 @@ export class EmailService {
       ? `${finalAppUrl}/api/leads/${leadId}/track-click?l=${DEFAULT_LINK_KEY}${touchPosition ? `&touch=${touchPosition}` : ''}`
       : TRACKED_LINKS[DEFAULT_LINK_KEY];
 
-    const htmlBody = this.generateHtml(body, fromName, credentials.fromTitle || 'Export Marketing Strategist', pixelTag, unsubscribeUrl, demoUrl);
+    const htmlBody = this.generateHtml(body, fromName, credentials.fromTitle || '', pixelTag, unsubscribeUrl, demoUrl);
 
     if (!transporter) {
       throw new Error('Failed to initialize email transporter.');
@@ -177,8 +177,8 @@ export class EmailService {
 
     <div class="border-divider" style="padding-top: 30px; border-top: 1px solid #eaeaea; margin-bottom: 25px;">
       <div style="border-left: 3px solid #d32e2d; padding-left: 15px;">
-        <div class="text-primary" style="font-size: 15px; font-weight: bold; color: #1a202c; letter-spacing: 0.5px;">${fromName || 'Nitin Gupta'}</div>
-        <div class="text-secondary" style="font-size: 11px; color: #718096; text-transform: uppercase; letter-spacing: 1px; margin-top: 3px; font-weight: 600;">${fromTitle || 'Export Marketing Strategist'}</div>
+        <div class="text-primary" style="font-size: 15px; font-weight: bold; color: #1a202c; letter-spacing: 0.5px;">${fromName}</div>
+        ${fromTitle ? `<div class="text-secondary" style="font-size: 11px; color: #718096; text-transform: uppercase; letter-spacing: 1px; margin-top: 3px; font-weight: 600;">${fromTitle}</div>` : ''}
       </div>
     </div>
 

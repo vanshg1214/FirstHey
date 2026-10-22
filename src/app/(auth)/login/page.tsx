@@ -91,8 +91,10 @@ export default function LoginPage() {
       <div className="w-full max-w-md space-y-6 relative z-10">
         {/* Logo Header */}
         <div className="text-center space-y-3 mb-6">
-          <div className="flex items-center justify-center mx-auto mb-2">
-            <span className="text-2xl font-bold text-slate-900 tracking-tight">FirstHey</span>
+          <div className="flex items-center justify-center gap-3 mx-auto mb-2">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo-mark.svg" alt="" width={44} height={44} className="w-11 h-11 rounded-xl shadow-md shadow-blue-600/20" />
+            <span className="text-3xl font-black text-slate-900 tracking-tight">FirstHey</span>
           </div>
           <p className="text-xs text-slate-500 max-w-xs mx-auto">
             {isForgotPassword
