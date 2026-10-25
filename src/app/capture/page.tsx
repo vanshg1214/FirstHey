@@ -441,6 +441,24 @@ function CaptureDashboardContent() {
   const handleConfirmFields = async (confirmedFields: ExtractedContact) => {
     setExtractedFields(confirmedFields);
     setShowFieldsModal(false);
+
+    // Persist what the user confirmed (their edits included) before anything else uses it.
+    if (typeof navigator === 'undefined' || navigator.onLine) {
+      const activeLeadId = leadId || (await ensureLeadId());
+      if (activeLeadId) {
+        const { image: _card, ...details } = confirmedFields as any;
+        fetch(`/api/leads/${activeLeadId}/save`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contactFields: details,
+            exhibition: exhibition || null,
+            exhibition_id: exhibitionId || null,
+            stall: stall || null,
+          }),
+        }).catch(err => console.warn('Could not save confirmed details yet:', err));
+      }
+    }
     // Advance to notes step
     setMode('notes');
   };

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   X,
   User,
@@ -99,8 +99,16 @@ export default function LeadDetailPanel({ lead, onClose, onRefresh }: LeadDetail
   const [editingBody, setEditingBody] = useState('');
   const [isSavingFollowup, setIsSavingFollowup] = useState(false);
 
-  // Reset fields when lead changes
+  // Reset fields when the lead changes, or when its saved details really change. A background refresh
+  // hands us a new object with the same values, and that must not wipe what the user is typing.
+  const contactSignature = JSON.stringify(lead.contact_fields || {});
+  const isEditingRef = useRef(false);
+  isEditingRef.current = isEditing;
+  const shownLeadId = useRef<string | null>(null);
   useEffect(() => {
+    const sameLead = shownLeadId.current === lead.id;
+    shownLeadId.current = lead.id;
+    if (sameLead && isEditingRef.current) return;
     setEditName(lead.contact_fields?.name || '');
     setEditCompany(lead.contact_fields?.company || '');
     setEditTitle(lead.contact_fields?.title || '');
@@ -112,7 +120,7 @@ export default function LeadDetailPanel({ lead, onClose, onRefresh }: LeadDetail
     setScanError(null);
     setEmailDraft(null);
     setCardImageBase64(null);
-  }, [lead.id, lead.contact_fields, lead.notes]);
+  }, [lead.id, contactSignature, lead.notes]);
 
   useEffect(() => {
     const originalStyle = window.getComputedStyle(document.body).overflow;
@@ -123,15 +131,27 @@ export default function LeadDetailPanel({ lead, onClose, onRefresh }: LeadDetail
   }, []);
 
   const handleGenerateDraft = async (forceNew: boolean = false) => {
+    // Use what is on screen: if the user is editing, their changes count even before they press Save.
+    const current = isEditing
+      ? {
+          ...contact,
+          name: editName || null,
+          company: editCompany || null,
+          title: editTitle || null,
+          email: editEmail || null,
+          phone: editPhone || null,
+        }
+      : contact;
+
     // Validation: Ask user for missing crucial info
-    if (!contact.email || !contact.company || !contact.name) {
+    if (!current.email || !current.company || !current.name) {
       setError('Missing crucial information (Name, Company, or Email). Please fill them out before initializing the pipeline.');
       setIsEditing(true);
       return;
     }
 
     // If we already have a generated draft saved and not forcing a new one, use it!
-    if (!forceNew && !customContext && lead.context_summary?.latest_draft) {
+    if (!forceNew && !customContext && !isEditing && lead.context_summary?.latest_draft) {
       setEmailDraft(lead.context_summary.latest_draft);
       return;
     }
@@ -143,7 +163,7 @@ export default function LeadDetailPanel({ lead, onClose, onRefresh }: LeadDetail
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contactFields: contact,
+          contactFields: current,
           senderName: 'Sales Exec',
           customContext: customContext || undefined
         }),

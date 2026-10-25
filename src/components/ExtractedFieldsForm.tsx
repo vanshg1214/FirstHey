@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { User, Building, ShieldAlert, Award, Phone, Mail, Check, MapPin } from 'lucide-react';
 
 interface ExtractedFields {
@@ -32,7 +32,12 @@ export default function ExtractedFieldsForm({
   const [fields, setFields] = useState<ExtractedFields>({ ...initialFields });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Start over only when the incoming details really are different (a new card), not on every re-render.
+  const lastInitial = useRef(JSON.stringify(initialFields));
   useEffect(() => {
+    const signature = JSON.stringify(initialFields);
+    if (signature === lastInitial.current) return;
+    lastInitial.current = signature;
     setFields({ ...initialFields });
   }, [initialFields]);
 

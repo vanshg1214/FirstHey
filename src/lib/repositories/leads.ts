@@ -54,20 +54,44 @@ export class LeadsRepository {
    * Updates the contact fields and sets status.
    */
   public static async updateContactFields(supabase: SupabaseClient<any, "public", any>, leadId: string, fields: any, status: string = 'extracted') {
+    const { data: existing } = await supabase
+      .from('leads')
+      .select('contact_fields, context_summary')
+      .eq('id', leadId)
+      .maybeSingle();
+
+    // What the user typed wins over what is stored, but fields they didn't send (address, second phone,
+    // website) are kept. The card photo is saved separately, never inside the contact details.
+    const { image: _image, ...incoming } = fields || {};
+    const previous = existing?.contact_fields || {};
+    const merged: Record<string, any> = { ...previous, ...incoming };
+
+    const update: Record<string, any> = {
+      name: merged.name || null,
+      company: merged.company || null,
+      title: merged.title || null,
+      email: merged.email || null,
+      phone: merged.phone || null,
+      secondary_phone: merged.secondary_phone || null,
+      website: merged.website || null,
+      address: merged.address || null,
+      contact_fields: merged,
+      status: status,
+    };
+
+    // A saved draft was written for the old details. If name, company, title or email changed, drop it
+    // so the next draft is written from what the user entered.
+    const detailsChanged = ['name', 'company', 'title', 'email'].some(
+      k => (previous[k] || null) !== (merged[k] || null)
+    );
+    if (detailsChanged && existing?.context_summary?.latest_draft) {
+      const { latest_draft: _draft, ...rest } = existing.context_summary;
+      update.context_summary = rest;
+    }
+
     const { data, error } = await supabase
       .from('leads')
-      .update({
-        name: fields.name || null,
-        company: fields.company || null,
-        title: fields.title || null,
-        email: fields.email || null,
-        phone: fields.phone || null,
-        secondary_phone: fields.secondary_phone || null,
-        website: fields.website || null,
-        address: fields.address || null,
-        contact_fields: fields,
-        status: status,
-      })
+      .update(update)
       .eq('id', leadId)
       .select()
       .single();
