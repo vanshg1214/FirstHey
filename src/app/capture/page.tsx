@@ -459,8 +459,8 @@ function CaptureDashboardContent() {
         }).catch(err => console.warn('Could not save confirmed details yet:', err));
       }
     }
-    // Advance to notes step
-    setMode('notes');
+    // Move on to notes after the first scan; editing from a later step stays where you are.
+    setMode((current) => (current === 'card' || current === 'card_choice' ? 'notes' : current));
   };
 
   const handleGenerateDraft = async () => {
@@ -741,6 +741,22 @@ function CaptureDashboardContent() {
                         </p>
                       )}
                     </div>
+                    {extractedFields && (
+                      <div className="w-full max-w-sm mx-auto flex items-center justify-between gap-3 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-left">
+                        <div className="min-w-0">
+                          <p className="text-sm font-bold text-slate-900 truncate">{extractedFields.name || 'Unknown Name'}</p>
+                          <p className="text-xs text-slate-500 truncate">
+                            {[extractedFields.title, extractedFields.company].filter(Boolean).join(' at ') || extractedFields.email || 'No details'}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => setShowFieldsModal(true)}
+                          className="shrink-0 text-xs font-bold text-teal-700 bg-teal-50 border border-teal-200 px-3 py-1.5 rounded-lg hover:bg-teal-100 transition-colors"
+                        >
+                          Edit details
+                        </button>
+                      </div>
+                    )}
                     <div className="w-full max-w-sm mx-auto">
                       {mode === 'voice' && <RecordButton onRecordingComplete={handleRecordingComplete} isProcessing={audioProcessing} />}
                       {mode === 'notes' && <NotesScanner onScanComplete={handleNotesScanComplete} isProcessing={notesProcessing} leadId={leadId} ensureLeadId={ensureLeadId} />}
@@ -940,7 +956,7 @@ function CaptureDashboardContent() {
                       onClick={() => setShowFieldsModal(true)}
                     >
                       <div className="absolute top-0 left-0 w-1 h-full bg-teal-500 rounded-l-3xl"></div>
-                      <div className="absolute top-4 right-4 text-[10px] uppercase font-bold text-teal-600 bg-teal-50 px-3 py-1 rounded-full border border-teal-200 opacity-0 group-hover:opacity-100 transition-opacity">Edit Profile</div>
+                      <div className="absolute top-4 right-4 text-[10px] uppercase font-bold text-teal-600 bg-teal-50 px-3 py-1 rounded-full border border-teal-200 transition-opacity">Edit Profile</div>
                       <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-6 flex items-center gap-2">
                         <User className="w-4 h-4 text-teal-600" /> Contact Profile
                       </h4>
